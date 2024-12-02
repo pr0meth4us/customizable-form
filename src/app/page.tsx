@@ -118,7 +118,7 @@ const CambodiaPostSurvey: React.FC = () => {
             }}
           />
           <ImageSelector
-            name="Nature of Goods"
+            name="Wording"
             options={["natureOfGood1", "natureOfGood1-1", "natureOfGood3", "natureOfGood4"]}
             onSelectionComplete={(selection) => {
               // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -133,7 +133,7 @@ const CambodiaPostSurvey: React.FC = () => {
             }}
           />
           <ImageSelector
-            name="Service Representation"
+            name="Wording"
             options={["service1", "service2", "service3"]}
             onSelectionComplete={(selection) => {
               // @ts-expect-error

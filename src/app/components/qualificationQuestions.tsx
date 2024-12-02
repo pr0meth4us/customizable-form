@@ -6,12 +6,12 @@ const qualificationQuestions = [
     },
     {
         id: 'sent_received_items',
-        label: 'International Shipping Experience',
+        label: 'Have you ever sent, received, bought, or sold items/letters to or from outside Cambodia?',
         options: ['Yes', 'No']
     },
     {
         id: 'worked_in_logistics',
-        label: 'Logistics Background',
+        label: 'Have you ever worked in logistics or postal services?',
         options: ['Yes', 'No']
     }
 ]
