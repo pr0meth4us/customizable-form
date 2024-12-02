@@ -19,6 +19,7 @@ interface ImageSelectorProps {
   }) => void;
 }
 
+
 export const ImageSelector: React.FC<ImageSelectorProps> = ({
                                                               name,
                                                               options,
