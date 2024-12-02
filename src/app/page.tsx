@@ -217,7 +217,7 @@ const CambodiaPostSurvey: React.FC = () => {
 
     try {
       // Make a POST request to the Flask API running on port 5001
-      const response = await fetch("http://localhost:5001/submit-survey", {
+      const response = await fetch("https://thundering-sharai-aupp-156f29b2.koyeb.app/submit-survey", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
