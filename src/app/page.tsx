@@ -1,7 +1,4 @@
-"use client";
-/* eslint-disable */
-// @ts-nocheck
-
+"use client"
 import { motion } from "framer-motion";
 import {ArrowRight, CheckCircle2, Info} from "lucide-react";
 import React, { useState, useEffect } from "react";
@@ -26,6 +23,7 @@ interface FormData {
 
 interface Step {
   title: string;
+  instructions: string;
   component: React.ReactNode;
 }
 
@@ -51,28 +49,28 @@ const CambodiaPostSurvey: React.FC = () => {
     }
   }, []);
 
-  // @ts-ignore
   const steps: Step[] = [
     {
       title: "Qualification Questions",
+      instructions: "Please answer the following questions to help us understand your background and experience.",
       component: (
-        <div className="grid md:grid-cols-3 gap-6">
+        <div className="grid md:grid-cols-1 gap-6"> {/* Single column for questions */}
           {qualificationQuestions.map((question) => (
             <motion.div
               key={question.id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 * (Number(question.id) || 0) }}
+              initial={{opacity: 0, y: 20}}
+              animate={{opacity: 1, y: 0}}
+              transition={{delay: 0.1 * (Number(question.id) || 0)}}
               className="bg-white shadow-md rounded-xl p-6 hover:shadow-lg transition-all"
             >
               <h3 className="text-lg font-semibold mb-4 text-gray-800">
                 {question.label}
               </h3>
-              <div className="space-y-3">
+              <div className="flex space-x-6"> {/* Horizontal layout for options */}
                 {question.options.map((option) => (
                   <label
                     key={option}
-                    className="flex items-center space-x-3 cursor-pointer group"
+                    className="flex items-center space-x-2 cursor-pointer group"
                   >
                     <input
                       type="radio"
@@ -90,22 +88,25 @@ const CambodiaPostSurvey: React.FC = () => {
                       }}
                     />
                     <span className="text-gray-700 group-hover:text-blue-600 transition-colors">
-                      {option}
-                    </span>
+              {option}
+            </span>
                   </label>
                 ))}
               </div>
             </motion.div>
           ))}
         </div>
+
+
       ),
     },
     {
       title: "Select the Wording Option You Like Best",
+      instructions: "You are sending a package of Prohok to your friend Alex in the US using the postal service app. The following snapshots illustrate some of the steps you'll follow, along with alternative wordings that convey the same meaning. Please review the options and select the ones you think work best for each step.",
       component: (
         <div className="space-y-8">
           <ImageSelector
-            name="Wording"
+            instructions="Refers to a code that classifies products for customs and shipping based on international standards."
             options={["hs1", "hs2", "hs3"]}
             singleSelect
             onSelectionComplete={(selection) => {
@@ -117,9 +118,10 @@ const CambodiaPostSurvey: React.FC = () => {
                 },
               }));
             }}
+            labels={["Harmonized System", "HS Code", "Code"]}
           />
           <ImageSelector
-            name="Wording"
+            instructions="Refers to a group of labels are used to classify the product in your package for shipping "
             options={["natureOfGood1", "natureOfGood1-1", "natureOfGood3", "natureOfGood4"]}
             singleSelect
             onSelectionComplete={(selection) => {
@@ -131,9 +133,11 @@ const CambodiaPostSurvey: React.FC = () => {
                 },
               }));
             }}
+            labels={["Tags", "Item Types", "Nature of Good", "(blank)"]}
           />
           <ImageSelector
-            name="Wording"
+            title="Service Options"
+            instructions="Just Choose What Sounds Right"
             options={["service1", "service2", "service3"]}
             singleSelect
             onSelectionComplete={(selection) => {
@@ -147,7 +151,8 @@ const CambodiaPostSurvey: React.FC = () => {
             }}
           />
           <ImageSelector
-            name="Wording"
+            title=""
+            instructions="Just Choose What Sounds Right"
             options={["weight1-IMAGE", "weight2-IMAGE", "weight3", "weight4"]}
             singleSelect
             onSelectionComplete={(selection) => {
@@ -269,9 +274,6 @@ const CambodiaPostSurvey: React.FC = () => {
         >
           <CheckCircle2 className="mx-auto mb-4 text-green-500" size={64} />
           <h2 className="text-2xl font-bold mb-4 text-gray-800">Thank You!</h2>
-          <p className="text-gray-600 mb-4">
-            You have already submitted the survey. We appreciate your participation.
-          </p>
         </motion.div>
       </div>
     );
@@ -301,13 +303,24 @@ const CambodiaPostSurvey: React.FC = () => {
             <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">Survey Purpose</h2>
               <p className="text-gray-700">
-                The survey aims to evaluate the content design of the Cambodia Post platform, which provides domestic and international mail delivery, package services, and logistics solutions, by gathering feedback from users and non-users alike.
-              </p>
+                The purpose of this survey is to evaluate the content design of the Cambodia Post platform, which offers domestic and international mail delivery, package services, and logistics solutions, based on feedback from both users and non-users.              </p>
             </div>
           )}
-          <h2 className="text-2xl font-semibold mb-6 text-gray-800">
+          <h2 className="text-2xl font-semibold mb-2 text-gray-800">
             {steps[currentStep].title}
           </h2>
+          {currentStep === 1 && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+      <span className="inline-flex items-center">
+        Hypothesis
+      </span>
+              </h2>
+              {steps[currentStep].instructions}
+            </div>
+          )}
+
+
 
           <form onSubmit={handleSubmit} className="space-y-6">
             {steps[currentStep].component}
@@ -320,7 +333,7 @@ const CambodiaPostSurvey: React.FC = () => {
                   onClick={handlePrevStep}
                   className="flex items-center space-x-2"
                 >
-                  <ArrowRight className="w-5 h-5 transform rotate-180" />
+                  <ArrowRight className="w-5 h-5 transform rotate-180"/>
                   <span>Previous</span>
                 </Button>
               )}
@@ -332,7 +345,7 @@ const CambodiaPostSurvey: React.FC = () => {
                   className="ml-auto flex items-center space-x-2"
                 >
                   <span>Next</span>
-                  <ArrowRight className="w-5 h-5" />
+                  <ArrowRight className="w-5 h-5"/>
                 </Button>
               ) : (
                 <Button
@@ -341,7 +354,7 @@ const CambodiaPostSurvey: React.FC = () => {
                   className="ml-auto flex items-center space-x-2"
                 >
                   {isSubmitting ? (
-                    <CheckCircle2 className="w-5 h-5 animate-spin" />
+                    <CheckCircle2 className="w-5 h-5 animate-spin"/>
                   ) : (
                     <span>Submit</span>
                   )}
