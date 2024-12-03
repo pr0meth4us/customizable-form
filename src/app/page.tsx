@@ -4,7 +4,7 @@
 
 import { motion } from "framer-motion";
 import { ArrowRight, CheckCircle2 } from "lucide-react";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 import "./globals.css";
 import { Button } from "@/components/ui/button";
@@ -13,33 +13,26 @@ import { ImageSelector } from "@/app/components/ImageSelector";
 import qualificationQuestions from "@/app/components/qualificationQuestions";
 import { toast, Toaster } from "sonner";
 
-interface ImageSelection {
-  image: string | null;
-  reasons: string[];
-}
-
 interface FormData {
   qualifications: Record<string, string>;
   imageSelections: {
-    wording: ImageSelection | null;
+    wording: string | null;
     natureOfGoods: string | null;
     serviceRepresentation: string | null;
-    weightVisualization: ImageSelection | null; // Ensure this is the correct type
+    weightVisualization: string | null;
   };
   submittedAt: Date;
 }
 
-
-// Interface for Step
 interface Step {
   title: string;
-  component: React.ReactNode; // ReactNode allows for various types of components, including JSX elements
+  component: React.ReactNode;
 }
-
 
 const CambodiaPostSurvey: React.FC = () => {
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [hasSubmitted, setHasSubmitted] = useState<boolean>(false);
   const [formData, setFormData] = useState<FormData>({
     qualifications: {},
     imageSelections: {
@@ -50,6 +43,13 @@ const CambodiaPostSurvey: React.FC = () => {
     },
     submittedAt: new Date(),
   });
+
+  useEffect(() => {
+    const submitted = localStorage.getItem('surveySubmitted');
+    if (submitted === 'true') {
+      setHasSubmitted(true);
+    }
+  }, []);
 
   // @ts-ignore
   const steps: Step[] = [
@@ -107,12 +107,13 @@ const CambodiaPostSurvey: React.FC = () => {
           <ImageSelector
             name="Wording"
             options={["hs1", "hs2", "hs3"]}
+            singleSelect
             onSelectionComplete={(selection) => {
               setFormData((prev) => ({
                 ...prev,
                 imageSelections: {
                   ...prev.imageSelections,
-                  wording: selection,
+                  wording: selection.image,
                 },
               }));
             }}
@@ -120,14 +121,13 @@ const CambodiaPostSurvey: React.FC = () => {
           <ImageSelector
             name="Wording"
             options={["natureOfGood1", "natureOfGood1-1", "natureOfGood3", "natureOfGood4"]}
+            singleSelect
             onSelectionComplete={(selection) => {
-              // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-              // @ts-expect-error
               setFormData((prev) => ({
                 ...prev,
                 imageSelections: {
                   ...prev.imageSelections,
-                  natureOfGoods: selection,
+                  natureOfGoods: selection.image,
                 },
               }));
             }}
@@ -135,26 +135,27 @@ const CambodiaPostSurvey: React.FC = () => {
           <ImageSelector
             name="Wording"
             options={["service1", "service2", "service3"]}
+            singleSelect
             onSelectionComplete={(selection) => {
-              // @ts-expect-error
               setFormData((prev) => ({
                 ...prev,
                 imageSelections: {
                   ...prev.imageSelections,
-                  serviceRepresentation: selection,
+                  serviceRepresentation: selection.image,
                 },
               }));
             }}
           />
           <ImageSelector
-            name="Weight Visualization"
+            name="Wording"
             options={["weight1-IMAGE", "weight2-IMAGE", "weight3", "weight4"]}
+            singleSelect
             onSelectionComplete={(selection) => {
               setFormData((prev) => ({
                 ...prev,
                 imageSelections: {
                   ...prev.imageSelections,
-                  weightVisualization: selection,
+                  weightVisualization: selection.image,
                 },
               }));
             }}
@@ -165,7 +166,6 @@ const CambodiaPostSurvey: React.FC = () => {
   ];
 
   const handleNextStep = () => {
-    // Validate current step before moving to next
     const currentStepQuestions = steps[currentStep].title === "Qualification Questions"
       ? qualificationQuestions
       : [];
@@ -195,7 +195,12 @@ const CambodiaPostSurvey: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Validate form data before submitting
+    // Check if already submitted
+    if (hasSubmitted) {
+      toast.error("You have already submitted the survey.");
+      return;
+    }
+
     const allQuestionsAnswered = qualificationQuestions.every(
       (question) => formData.qualifications[question.id]
     );
@@ -215,7 +220,6 @@ const CambodiaPostSurvey: React.FC = () => {
     setIsSubmitting(true);
 
     try {
-      // Make a POST request to the Flask API running on port 5001
       const response = await fetch("https://thundering-sharai-aupp-156f29b2.koyeb.app/submit-survey", {
         method: "POST",
         headers: {
@@ -224,22 +228,25 @@ const CambodiaPostSurvey: React.FC = () => {
         body: JSON.stringify({
           qualifications: formData.qualifications,
           imageSelections: formData.imageSelections,
-          submittedAt: formData.submittedAt.toISOString(), // Convert to ISO string
+          submittedAt: formData.submittedAt.toISOString(),
         }),
       });
 
       if (!response.ok) {
-        const errorText = await response.text(); // Get raw error text
+        const errorText = await response.text();
         console.error("Error response body:", errorText);
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const result = await response.json();
 
-      // Handle the result
       if (result.success) {
         toast.success("Survey submitted successfully!");
         console.log("Survey submitted:", result.message);
+
+        // Mark as submitted locally
+        localStorage.setItem('surveySubmitted', 'true');
+        setHasSubmitted(true);
       } else {
         toast.error(result.message);
       }
@@ -251,9 +258,27 @@ const CambodiaPostSurvey: React.FC = () => {
     }
   };
 
+  // If already submitted, show a thank you message
+  if (hasSubmitted) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-md bg-white rounded-2xl shadow-2xl p-8 text-center"
+        >
+          <CheckCircle2 className="mx-auto mb-4 text-green-500" size={64} />
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">Thank You!</h2>
+          <p className="text-gray-600 mb-4">
+            You have already submitted the survey. We appreciate your participation.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
-      {/* Toaster for notifications */}
       <Toaster />
 
       <motion.div
@@ -262,7 +287,7 @@ const CambodiaPostSurvey: React.FC = () => {
         className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         <div className="bg-blue-600 text-white p-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Cambodia Post Services Survey</h1>
+          <h1 className="text-2xl font-bold">Content Writing Survey</h1>
           <Progress
             value={((currentStep + 1) / steps.length) * 100}
             className="w-1/3 bg-blue-400"

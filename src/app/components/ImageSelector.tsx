@@ -5,8 +5,9 @@ import { Check, X } from "lucide-react";
 
 const DEFAULT_REASONS = [
   'Clarity', 'Conciseness', 'Effectiveness',
-  'Visual Appeal', 'Relevance', 'Comprehensiveness',
-  'Simplicity', 'Professionalism', 'Engagement', 'Informativeness'
+  'Comprehensiveness',
+  'Simplicity', 'Professionalism',
+  'Informativeness', 'Intuitive'
 ];
 
 interface ImageSelectorProps {
@@ -16,7 +17,9 @@ interface ImageSelectorProps {
   onSelectionComplete?: (selection: {
     image: string | null;
     reasons: string[];
+    customReason?: string;
   }) => void;
+  singleSelect?: boolean; // Add this line
 }
 
 
@@ -25,13 +28,24 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
                                                               options,
                                                               reasons = DEFAULT_REASONS,
                                                               onSelectionComplete,
+                                                              singleSelect = false, // default value for singleSelect
                                                             }) => {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
+  const [customReason, setCustomReason] = useState<string>("");
 
   const handleImageSelect = (option: string) => {
-    setSelectedImage(option === selectedImage ? null : option);
-    onSelectionComplete?.({ image: option, reasons: selectedReasons });
+    if (singleSelect) {
+      setSelectedImage(option === selectedImage ? null : option);
+    } else {
+      // Handle multiple selection logic if needed
+      setSelectedImage(option);
+    }
+    onSelectionComplete?.({
+      image: option,
+      reasons: selectedReasons,
+      customReason: customReason,
+    });
   };
 
   const handleReasonToggle = (reason: string) => {
@@ -42,7 +56,17 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
     setSelectedReasons(updatedReasons);
     onSelectionComplete?.({
       image: selectedImage,
-      reasons: updatedReasons
+      reasons: updatedReasons,
+      customReason: customReason,
+    });
+  };
+
+  const handleCustomReasonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setCustomReason(e.target.value);
+    onSelectionComplete?.({
+      image: selectedImage,
+      reasons: selectedReasons,
+      customReason: e.target.value,
     });
   };
 
@@ -128,6 +152,22 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
               </motion.button>
             ))}
           </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-6 space-y-4"
+          >
+            <h3 className="text-lg font-semibold text-gray-800">
+              Testimonials
+            </h3>
+            <textarea
+              className="w-full p-3 border rounded-lg text-sm"
+              placeholder="Optional but a thougt out paragraph of why you chose what you chose is much appreciated"
+              value={customReason}
+              onChange={handleCustomReasonChange}
+            />
+          </motion.div>
         </motion.div>
       )}
     </div>
