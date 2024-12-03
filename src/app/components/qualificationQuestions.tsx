@@ -13,6 +13,11 @@ const qualificationQuestions = [
         id: 'worked_in_logistics',
         label: 'Have you ever worked in logistics or postal services?',
         options: ['Yes', 'No']
+    },
+    {
+        id: 'used_logistics_app',
+        label: 'Have you ever used shipping or logistics apps such as DHL, FedEx, Cambodia Post, UPS, USPS, VET Logistic, J&T Express, or others?',
+        options: ['Yes', 'No']
     }
 ]
 
