@@ -1,5 +1,6 @@
 "use client"
 import { motion } from "framer-motion";
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 import {ArrowRight, CheckCircle2, Info} from "lucide-react";
 import React, { useState, useEffect } from "react";
 
