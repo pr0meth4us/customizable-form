@@ -287,7 +287,7 @@ const CambodiaPostSurvey: React.FC = () => {
         className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         <div className="bg-blue-600 text-white p-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Content Writing Survey</h1>
+          <h1 className="text-2xl font-bold">Content Design Survey</h1>
           <Progress
             value={((currentStep + 1) / steps.length) * 100}
             className="w-1/3 bg-blue-400"
