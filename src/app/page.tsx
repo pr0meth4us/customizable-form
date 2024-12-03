@@ -52,7 +52,7 @@ const CambodiaPostSurvey: React.FC = () => {
 
   const steps: Step[] = [
     {
-      title: "Qualification Questions",
+      title: "",
       instructions: "Please answer the following questions to help us understand your background and experience.",
       component: (
         <div className="grid md:grid-cols-1 gap-6"> {/* Single column for questions */}
