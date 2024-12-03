@@ -72,9 +72,6 @@ export const ImageSelector: React.FC<ImageSelectorProps> = ({
 
   return (
     <div className="bg-white shadow-lg rounded-xl p-6 space-y-6">
-      <h2 className="text-2xl font-semibold text-gray-800 mb-4 text-center">
-        Select Best {name} Option
-      </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         {options.map((option, index) => (

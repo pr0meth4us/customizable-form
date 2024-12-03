@@ -3,7 +3,7 @@
 // @ts-nocheck
 
 import { motion } from "framer-motion";
-import { ArrowRight, CheckCircle2 } from "lucide-react";
+import {ArrowRight, CheckCircle2, Info} from "lucide-react";
 import React, { useState, useEffect } from "react";
 
 import "./globals.css";
@@ -101,7 +101,7 @@ const CambodiaPostSurvey: React.FC = () => {
       ),
     },
     {
-      title: "Image Selection",
+      title: "Select the Wording Option You Like Best",
       component: (
         <div className="space-y-8">
           <ImageSelector
@@ -287,7 +287,9 @@ const CambodiaPostSurvey: React.FC = () => {
         className="w-full max-w-5xl bg-white rounded-2xl shadow-2xl overflow-hidden"
       >
         <div className="bg-blue-600 text-white p-6 flex items-center justify-between">
-          <h1 className="text-2xl font-bold">Content Design Survey</h1>
+          <div>
+            <h1 className="text-2xl font-bold">Content Design Survey</h1>
+          </div>
           <Progress
             value={((currentStep + 1) / steps.length) * 100}
             className="w-1/3 bg-blue-400"
@@ -295,6 +297,14 @@ const CambodiaPostSurvey: React.FC = () => {
         </div>
 
         <div className="p-8">
+          {currentStep === 0 && (
+            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">Survey Purpose</h2>
+              <p className="text-gray-700">
+                The survey aims to evaluate the content design of the Cambodia Post platform, which provides domestic and international mail delivery, package services, and logistics solutions, by gathering feedback from users and non-users alike.
+              </p>
+            </div>
+          )}
           <h2 className="text-2xl font-semibold mb-6 text-gray-800">
             {steps[currentStep].title}
           </h2>
