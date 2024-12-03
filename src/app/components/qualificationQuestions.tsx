@@ -11,7 +11,7 @@ const qualificationQuestions = [
     },
     {
         id: 'worked_in_logistics',
-        label: 'Have you ever worked in logistics or postal services?',
+        label: 'Have you ever worked in shipping, logistics, or postal services?',
         options: ['Yes', 'No']
     },
     {
