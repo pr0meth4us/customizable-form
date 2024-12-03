@@ -15,9 +15,17 @@ interface FormData {
   qualifications: Record<string, string>;
   imageSelections: {
     wording: string | null;
+    wordingReasons?: string[];
+    wordingCustomReason?: string;
     natureOfGoods: string | null;
+    natureOfGoodsReasons?: string[];
+    natureOfGoodsCustomReason?: string;
     serviceRepresentation: string | null;
+    serviceRepresentationReasons?: string[];
+    serviceRepresentationCustomReason?: string;
     weightVisualization: string | null;
+    weightVisualizationReasons?: string[];
+    weightVisualizationCustomReason?: string;
   };
   submittedAt: Date;
 }
@@ -97,8 +105,6 @@ const CambodiaPostSurvey: React.FC = () => {
             </motion.div>
           ))}
         </div>
-
-
       ),
     },
     {
@@ -116,13 +122,16 @@ const CambodiaPostSurvey: React.FC = () => {
                 imageSelections: {
                   ...prev.imageSelections,
                   wording: selection.image,
+                  wordingReasons: selection.reasons,
+                  wordingCustomReason: selection.customReason,
                 },
               }));
             }}
             labels={["Harmonized System", "HS Code", "Code"]}
           />
+
           <ImageSelector
-            instructions="Refers to a group of labels are used to classify the product in your package for shipping "
+            instructions="Refers to a group of labels are used to classify the product in your package for shipping"
             options={["natureOfGood1", "natureOfGood1-1", "natureOfGood3", "natureOfGood4"]}
             singleSelect
             onSelectionComplete={(selection) => {
@@ -131,11 +140,14 @@ const CambodiaPostSurvey: React.FC = () => {
                 imageSelections: {
                   ...prev.imageSelections,
                   natureOfGoods: selection.image,
+                  natureOfGoodsReasons: selection.reasons,
+                  natureOfGoodsCustomReason: selection.customReason,
                 },
               }));
             }}
             labels={["Tags", "Item Types", "Nature of Good", "(blank)"]}
           />
+
           <ImageSelector
             title="Service Options"
             instructions="Just Choose What Sounds Right"
@@ -147,10 +159,13 @@ const CambodiaPostSurvey: React.FC = () => {
                 imageSelections: {
                   ...prev.imageSelections,
                   serviceRepresentation: selection.image,
+                  serviceRepresentationReasons: selection.reasons,
+                  serviceRepresentationCustomReason: selection.customReason,
                 },
               }));
             }}
           />
+
           <ImageSelector
             title=""
             instructions="Just Choose What Sounds Right"
@@ -162,6 +177,8 @@ const CambodiaPostSurvey: React.FC = () => {
                 imageSelections: {
                   ...prev.imageSelections,
                   weightVisualization: selection.image,
+                  weightVisualizationReasons: selection.reasons,
+                  weightVisualizationCustomReason: selection.customReason,
                 },
               }));
             }}

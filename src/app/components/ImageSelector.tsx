@@ -11,15 +11,15 @@ const DEFAULT_REASONS = [
 interface ImageSelectorProps {
   title?: string;
   instructions: string;
-  options: string[];  // Pass the options array dynamically
+  options: string[];
   reasons?: string[];
-  onSelectionComplete?: (selection: {
-    image: string | null;
-    reasons: string[];
-    customReason?: string;
-  }) => void;
   singleSelect?: boolean;
-  labels?: string[]  // labels can be a string[] or null
+  labels?: string[]
+  onSelectionComplete?: (selection: {
+  image: string | null;
+  reasons: string[];
+  customReason?: string;
+}) => void;
 }
 
 export const ImageSelector: React.FC<ImageSelectorProps> =
@@ -36,19 +36,28 @@ export const ImageSelector: React.FC<ImageSelectorProps> =
     const [selectedReasons, setSelectedReasons] = useState<string[]>([]);
     const [customReason, setCustomReason] = useState<string>("");
 
-    const handleImageSelect = (option: string) => {
-      if (singleSelect) {
-        setSelectedImage(option === selectedImage ? null : option);
-      } else {
-        setSelectedImage(option);
-      }
-
-      // Pass the selection to the parent component
+    // Create a method to send complete selection
+    const sendCompleteSelection = (
+      image: string | null = selectedImage,
+      reasons: string[] = selectedReasons,
+      custom: string = customReason
+    ) => {
       onSelectionComplete?.({
-        image: option,
-        reasons: selectedReasons,
-        customReason: customReason
+        image,
+        reasons,
+        customReason: custom
       });
+    };
+
+    const handleImageSelect = (option: string) => {
+      const newSelectedImage = singleSelect
+        ? (option === selectedImage ? null : option)
+        : option;
+
+      setSelectedImage(newSelectedImage);
+
+      // Send complete selection immediately
+      sendCompleteSelection(newSelectedImage);
     };
 
     const handleReasonToggle = (reason: string) => {
@@ -57,23 +66,21 @@ export const ImageSelector: React.FC<ImageSelectorProps> =
         : [...selectedReasons, reason];
 
       setSelectedReasons(updatedReasons);
-      onSelectionComplete?.({
-        image: selectedImage,
-        reasons: updatedReasons,
-        customReason: customReason
-      });
+
+      // Send complete selection with updated reasons
+      sendCompleteSelection(undefined, updatedReasons);
     };
 
     const handleCustomReasonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setCustomReason(e.target.value);
-      onSelectionComplete?.({
-        image: selectedImage,
-        reasons: selectedReasons,
-        customReason: e.target.value
-      });
+      const newCustomReason = e.target.value;
+      setCustomReason(newCustomReason);
+
+      // Send complete selection with updated custom reason
+      sendCompleteSelection(undefined, undefined, newCustomReason);
     };
 
-    return (
+
+  return (
       <div className="bg-white shadow-lg rounded-xl p-6 space-y-6">
         {title && <h2 className="text-xl font-semibold text-gray-800">{title}</h2>}
         <p className="text-gray-600">{instructions}</p>
