@@ -103,7 +103,7 @@ const CambodiaPostSurvey: React.FC = () => {
     },
     {
       title: "Select the Wording Option You Like Best",
-      instructions: "ou are sending a jar of Prohok to your friend Alex in the US using the postal service app. You’ll need to go through some of the steps shown in the snapshots. The areas to focus on are highlighted with red-bordered rectangles. These sections contain texts or buttons. Multiple screenshots are provided with alternative wordings that convey the same meaning. Please review the options and select the ones you think work best for each step.",
+      instructions: "You are sending a jar of Prohok to your friend Alex in the US through Cambodia Post. Before dropping off the Prohok at the post office, you need to get a digital receipt from their app. To do this, you'll need to go through some of the steps shown in the snapshots. In these snapshots, there are areas highlighted with red-bordered rectangles. These areas contain text or labels on buttons. Multiple screenshots are provided with alternative phrasings or wording variations for the same text or labels on the buttons. Please review the options and select the ones you think work best for each step.",
       component: (
         <div className="space-y-8">
           <ImageSelector
@@ -314,6 +314,7 @@ const CambodiaPostSurvey: React.FC = () => {
             <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
               <h2 className="text-lg font-semibold text-gray-800 mb-2">
       <span className="inline-flex items-center">
+        <Info></Info>
         Hypothesis
       </span>
               </h2>
