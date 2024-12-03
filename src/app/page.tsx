@@ -103,7 +103,7 @@ const CambodiaPostSurvey: React.FC = () => {
     },
     {
       title: "Select the Wording Option You Like Best",
-      instructions: "You are sending a package of Prohok to your friend Alex in the US using the postal service app. The following snapshots illustrate some of the steps you'll follow, along with alternative wordings that convey the same meaning. Please review the options and select the ones you think work best for each step.",
+      instructions: "ou are sending a jar of Prohok to your friend Alex in the US using the postal service app. You’ll need to go through some of the steps shown in the snapshots. The areas to focus on are highlighted with red-bordered rectangles. These sections contain texts or buttons. Multiple screenshots are provided with alternative wordings that convey the same meaning. Please review the options and select the ones you think work best for each step.",
       component: (
         <div className="space-y-8">
           <ImageSelector
