@@ -70,7 +70,7 @@ const CambodiaPostSurvey: React.FC = () => {
               initial={{opacity: 0, y: 20}}
               animate={{opacity: 1, y: 0}}
               transition={{delay: 0.1 * (Number(question.id) || 0)}}
-              className="bg-white shadow-md rounded-xl p-6 hover:shadow-lg transition-all"
+              className="bg-white nigga shadow-md rounded-xl p-6 hover:shadow-lg transition-all"
             >
               <h3 className="text-lg font-semibold mb-4 text-gray-800">
                 {question.label}
@@ -266,8 +266,6 @@ const CambodiaPostSurvey: React.FC = () => {
       if (result.success) {
         toast.success("Survey submitted successfully!");
         console.log("Survey submitted:", result.message);
-
-        // Mark as submitted locally
         localStorage.setItem('surveySubmitted', 'true');
         setHasSubmitted(true);
       } else {
@@ -281,7 +279,6 @@ const CambodiaPostSurvey: React.FC = () => {
     }
   };
 
-  // If already submitted, show a thank you message
   if (hasSubmitted) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-blue-100 flex items-center justify-center p-4">
@@ -318,11 +315,19 @@ const CambodiaPostSurvey: React.FC = () => {
 
         <div className="p-8">
           {currentStep === 0 && (
-            <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">Survey Purpose</h2>
-              <p className="text-gray-700">
-                The purpose of this survey is to evaluate the content design of the Cambodia Post platform, which offers domestic and international mail delivery, package services, and logistics solutions, based on feedback from both users and non-users.              </p>
-            </div>
+            <>
+              <div className="mb-6 bg-blue-50 border-l-4 border-blue-500 p-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">Survey Purpose</h2>
+                <p className="text-gray-700">
+                  The purpose of this survey is to evaluate the content design of the Cambodia Post platform, which offers domestic and international mail delivery, package services, and logistics solutions, based on feedback from both users and non-users.              </p>
+              </div>
+              <div className="mb-6 bg-yellow-50 border-l-4 border-yellow-500 p-4">
+                <h2 className="text-lg font-semibold text-gray-800 mb-2">Important Notice</h2>
+                <p className="text-gray-700">
+                  The database is no longer storing responses. The website is currently on standby for Mr. W to review the questionnaire.
+                </p>
+              </div>
+            </>
           )}
           <h2 className="text-2xl font-semibold mb-2 text-gray-800">
             {steps[currentStep].title}
