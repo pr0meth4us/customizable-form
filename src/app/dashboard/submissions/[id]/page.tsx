@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 
 interface Submission {
     _id: string;
-    answers: Record<string, any>; // Answers as an object
+    answers: Record<string, any>;
     submittedAt: string;
 }
 
@@ -26,7 +26,6 @@ const SubmissionViewerPage = () => {
     const params = useParams();
     const router = useRouter();
     const { id: questionnaireId } = params as { id: string };
-
     const [password, setPassword] = useState('');
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
@@ -42,7 +41,7 @@ const SubmissionViewerPage = () => {
                     setQuestionnaire(await res.json());
                 } else {
                     toast.error("Could not find questionnaire.");
-                    router.push('/admin');
+                    router.push('/dashboard'); // Updated route
                 }
             } catch (error) {
                 toast.error("Error fetching questionnaire details.");
@@ -67,7 +66,6 @@ const SubmissionViewerPage = () => {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ password })
             });
-
             if (!verifyRes.ok) {
                 toast.error("Incorrect password.");
                 return;
@@ -77,7 +75,6 @@ const SubmissionViewerPage = () => {
             const subRes = await fetch(`/api/questionnaires/${questionnaireId}/submissions`, {
                 headers: { 'Authorization': `Bearer ${password}` }
             });
-
             if(subRes.ok) {
                 setSubmissions(await subRes.json());
                 setIsAuthenticated(true);
@@ -118,12 +115,12 @@ const SubmissionViewerPage = () => {
                                     type="password"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter admin password"
+                                    placeholder="Enter password"
                                 />
                             </div>
                             <Button type="submit" className="w-full">Unlock</Button>
                         </form>
-                        <Button variant="link" className="mt-4" onClick={() => router.push('/admin')}>
+                        <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}> {/* Updated route */}
                             <ArrowLeft className="mr-2 h-4 w-4" /> Go Back
                         </Button>
                     </CardContent>
@@ -137,8 +134,8 @@ const SubmissionViewerPage = () => {
             <Toaster richColors/>
             <div className="flex justify-between items-center mb-8">
                 <h1 className="text-3xl font-bold">Submissions for: {questionnaire?.title}</h1>
-                <Button variant="outline" onClick={() => router.push('/admin')}>
-                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Admin
+                <Button variant="outline" onClick={() => router.push('/dashboard')}> {/* Updated route */}
+                    <ArrowLeft className="mr-2 h-4 w-4" /> Back to Dashboard
                 </Button>
             </div>
 
@@ -160,11 +157,10 @@ const SubmissionViewerPage = () => {
                                         <div key={qId} className="border-t pt-4">
                                             <p className="font-semibold text-gray-800">{getQuestionLabel(qId)}</p>
                                             <div className="text-gray-600 mt-1 pl-4">
-                                                {typeof answer === 'object' && answer !== null ? (
-                                                    <pre className="bg-gray-100 p-2 rounded-md text-sm whitespace-pre-wrap">{JSON.stringify(answer, null, 2)}</pre>
-                                                ) : (
-                                                    <p>{String(answer)}</p>
-                                                )}
+                                                {typeof answer === 'object' && answer !== null ?
+                                                    (<pre className="bg-gray-100 p-2 rounded-md text-sm whitespace-pre-wrap">{JSON.stringify(answer, null, 2)}</pre>) : (
+                                                        <p>{String(answer)}</p>
+                                                    )}
                                             </div>
                                         </div>
                                     ))}
