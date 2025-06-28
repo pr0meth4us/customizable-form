@@ -1,7 +1,16 @@
 
 import mongoose, { Schema, model, models } from 'mongoose';
-
-const questionSchema = new Schema({
+export interface IQuestion {
+  id: string;
+  label: string;
+  options?: string[]; // Optional based on your schema
+  type: 'radio' | 'text' | 'image-select';
+  instructions?: string; // Optional
+  imageOptions?: string[]; // Optional
+  imageLabels?: string[]; // Optional
+  viewPassword?: string; // Add this if you intend to include it here for password-protected questions
+}
+const questionSchema = new Schema<IQuestion>({ // Use the interface here
   id: {
     type: String,
     required: true,
@@ -20,6 +29,7 @@ const questionSchema = new Schema({
   imageOptions: [String],
   imageLabels: [String],
 });
+
 
 const questionnaireSchema = new Schema({
   title: {
