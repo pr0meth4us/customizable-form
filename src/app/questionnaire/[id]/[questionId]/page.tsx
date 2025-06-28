@@ -49,7 +49,7 @@ const QuestionPage: React.FC = () => {
           setAnswers(JSON.parse(savedAnswers));
         }
       } catch (error) {
-        toast.error("Failed to load survey data.", error);
+        console.log(error)
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -125,65 +125,65 @@ const QuestionPage: React.FC = () => {
   const isLastQuestion = currentQuestionIndex === (questionnaire?.questions.length ?? 0) - 1;
 
   return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-        <Toaster />
-        <Card className="w-full max-w-3xl animate-fade-in">
-          <CardHeader>
-            <Progress value={progressValue} className="mb-4" />
-            <CardTitle className="text-2xl">{currentQuestion.label}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {currentQuestion.type === 'radio' && (
-                <div className="flex flex-col space-y-2">
-                  {currentQuestion.options.map(option => (
-                      <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
-                        <input
-                            type="radio"
-                            name={currentQuestion.id}
-                            value={option}
-                            onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                            checked={answers[currentQuestion.id] === option}
-                            className="form-radio text-blue-600 focus:ring-blue-500 h-4 w-4"
-                        />
-                        <span>{option}</span>
-                      </label>
-                  ))}
-                </div>
-            )}
-            {/*
+    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+      <Toaster />
+      <Card className="w-full max-w-3xl animate-fade-in">
+        <CardHeader>
+          <Progress value={progressValue} className="mb-4" />
+          <CardTitle className="text-2xl">{currentQuestion.label}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {currentQuestion.type === 'radio' && (
+            <div className="flex flex-col space-y-2">
+              {currentQuestion.options.map(option => (
+                <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                  <input
+                    type="radio"
+                    name={currentQuestion.id}
+                    value={option}
+                    onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                    checked={answers[currentQuestion.id] === option}
+                    className="form-radio text-blue-600 focus:ring-blue-500 h-4 w-4"
+                  />
+                  <span>{option}</span>
+                </label>
+              ))}
+            </div>
+          )}
+          {/*
             * =================================================================
             * MODIFIED CODE: Added this block to render text inputs.
             * =================================================================
           */}
-            {currentQuestion.type === 'text' && (
-                <Textarea
-                    placeholder="Your answer..."
-                    onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                    value={answers[currentQuestion.id] || ''}
-                />
-            )}
-            {currentQuestion.type === 'image-select' && currentQuestion.imageOptions && (
-                <ImageSelector
-                    title=""
-                    instructions={currentQuestion.instructions || ''}
-                    options={currentQuestion.imageOptions}
-                    singleSelect
-                    onSelectionComplete={(selection) => handleAnswerChange(currentQuestion.id, selection)}
-                    labels={currentQuestion.imageLabels}
-                />
-            )}
-          </CardContent>
-        </Card>
-        <div className="flex justify-between w-full max-w-3xl mt-6">
-          <Button variant="outline" onClick={() => navigateToQuestion('prev')} disabled={currentQuestionIndex === 0}>
-            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-          </Button>
-          <Button onClick={() => navigateToQuestion('next')}>
-            {isLastQuestion ? 'Submit' : 'Next'}
-            {isLastQuestion ? <CheckCircle className="ml-2 h-4 w-4" /> : <ArrowRight className="ml-2 h-4 w-4" />}
-          </Button>
-        </div>
+          {currentQuestion.type === 'text' && (
+            <Textarea
+              placeholder="Your answer..."
+              onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+              value={String(answers[currentQuestion.id] || '')} // Explicitly cast to string
+            />
+          )}
+          {currentQuestion.type === 'image-select' && currentQuestion.imageOptions && (
+            <ImageSelector
+              title=""
+              instructions={currentQuestion.instructions || ''}
+              options={currentQuestion.imageOptions}
+              singleSelect
+              onSelectionComplete={(selection) => handleAnswerChange(currentQuestion.id, selection)}
+              labels={currentQuestion.imageLabels}
+            />
+          )}
+        </CardContent>
+      </Card>
+      <div className="flex justify-between w-full max-w-3xl mt-6">
+        <Button variant="outline" onClick={() => navigateToQuestion('prev')} disabled={currentQuestionIndex === 0}>
+          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+        </Button>
+        <Button onClick={() => navigateToQuestion('next')}>
+          {isLastQuestion ? 'Submit' : 'Next'}
+          {isLastQuestion ? <CheckCircle className="ml-2 h-4 w-4" /> : <ArrowRight className="ml-2 h-4 w-4" />}
+        </Button>
       </div>
+    </div>
   );
 };
 
