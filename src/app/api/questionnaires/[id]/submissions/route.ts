@@ -1,38 +1,46 @@
+// app/api/questionnaires/[id]/submissions/route.ts
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import Questionnaire, { IQuestion } from '@/models/Questionnaire';
-import Submission from '@/models/Submission';
+import Questionnaire, { IQuestion } from '@/models/Questionnaire'; // Import IQuestion for typing nested questions
+import Submission from '@/models/Submission'; // Import ISubmission for type safety
 import bcrypt from 'bcryptjs';
-import { Types } from 'mongoose';
+import { Types } from 'mongoose'; // Import Types for ObjectId
 
+// Define types for better clarity of lean results
 interface LeanQuestionnaireResult {
-    _id: Types.ObjectId;
-    questions: (IQuestion & { _id?: Types.ObjectId })[];
+    _id: Types.ObjectId; // MongoDB ObjectId type for the questionnaire's ID
+    questions: (IQuestion & { _id?: Types.ObjectId })[]; // Array of question sub-documents, with optional _id
+    // Add other fields from IQuestionnaire here if you access them directly on `questionnaire` object
 }
 
 interface LeanSubmissionResult {
-    _id: Types.ObjectId;
+    _id: Types.ObjectId; // MongoDB ObjectId type for the submission's ID
     questionnaireId: Types.ObjectId;
-    answers: Map<string, unknown>;
+    answers: Map<string, unknown>; // Answers are stored as a Map
     submittedAt: Date;
 }
 
+// Extend IQuestion to include the viewPassword property, which is selectively retrieved
 interface QuestionWithPassword extends IQuestion {
     viewPassword?: string;
 }
 
 interface SubmittedAnswer {
-    _id: string;
-    answer: unknown;
+    _id: string; // String representation of MongoDB ObjectId
+    answer: unknown; // The actual answer value, type depends on question
     submittedAt: Date;
 }
 
+/**
+ * POST handler to verify a password and fetch submissions for a specific question.
+ */
 export async function POST(
     request: Request,
-    { params }: { params: { questionId: string } }
+    // FIX: Changed the params typing to the standard `context` object structure
+    context: { params: { questionId: string } } // This is the recommended way for Next.js App Router params
 ): Promise<NextResponse> {
     try {
-        const { questionId } = params;
+        const { questionId } = context.params; // Access questionId from context.params
         const { password }: { password?: string } = await request.json();
 
         if (!password) {
@@ -72,7 +80,7 @@ export async function POST(
                 answer: sub.answers.get(questionId),
                 submittedAt: sub.submittedAt,
             }))
-            .filter(item => item.answer !== undefined && item.answer !== null); // Filter out entries without an answer for this question
+            .filter(item => item.answer !== undefined && item.answer !== null);
 
         return NextResponse.json({
             questionLabel: question.label,
@@ -80,7 +88,8 @@ export async function POST(
         });
 
     } catch (error: unknown) {
-        console.error(`API Error fetching submissions for question ${params.questionId}:`, error);
+        // Access questionId from context.params for logging as well
+        console.error(`API Error fetching submissions for question ${context.params.questionId}:`, error);
         return NextResponse.json({ message: 'Error fetching submissions' }, { status: 500 });
     }
 }
