@@ -1,25 +1,39 @@
 import mongoose from 'mongoose';
 
+// Validate environment variable at module level
 const MONGODB_URI = process.env.MONGODB_URI;
 
 if (!MONGODB_URI) {
   throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local'
+      'Please define the MONGODB_URI environment variable inside .env.local'
   );
 }
+
+// Now TypeScript knows MONGODB_URI is defined, but we need to help it understand
+const connectionString: string = MONGODB_URI;
 
 /**
  * Global is used here to maintain a cached connection across hot reloads
  * in development. This prevents connections from growing exponentially
  * during API Route usage.
  */
-let cached = global.mongoose;
-
-if (!cached) {
-  cached = global.mongoose = { conn: null, promise: null };
+interface MongooseCache {
+  conn: mongoose.Mongoose | null;
+  promise: Promise<mongoose.Mongoose> | null;
 }
 
-export async function connectToDatabase() {
+declare global {
+  // eslint-disable-next-line no-var
+  var mongoose: MongooseCache | undefined;
+}
+
+const cached: MongooseCache = global.mongoose || { conn: null, promise: null };
+
+if (!global.mongoose) {
+  global.mongoose = cached;
+}
+
+export async function connectToDatabase(): Promise<mongoose.Mongoose> {
   // If a connection is already cached, return it
   if (cached.conn) {
     return cached.conn;
@@ -31,7 +45,7 @@ export async function connectToDatabase() {
       bufferCommands: false,
     };
 
-    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongooseInstance) => {
+    cached.promise = mongoose.connect(connectionString, opts).then((mongooseInstance) => {
       return mongooseInstance;
     });
   }
