@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback, ChangeEvent, FormEvent} from 'react'; // Added ChangeEvent
 import { useParams, useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
@@ -9,11 +9,19 @@ import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
+interface ImageSelectionResult {
+  image: string | null;
+  reasons: string[];
+  customReason?: string;
+}
+
+type QuestionType = 'radio' | 'text' | 'image-select';
+
 interface Question {
   id: string;
   label: string;
   options?: string[];
-  type: 'radio' | 'text' | 'image-select';
+  type: QuestionType;
   instructions?: string;
   imageOptions?: string[];
   imageLabels?: string[];
@@ -32,18 +40,19 @@ const AllQuestionsPage: React.FC = () => {
   const { id: questionnaireId } = params as { id: string };
 
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [answers, setAnswers] = useState<Record<string, string | ImageSelectionResult>>({}); // More specific type for answers
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
   const loadData = useCallback(async () => {
     if (questionnaireId) {
       try {
         const res = await fetch(`/api/questionnaires/${questionnaireId}`);
         if (!res.ok) throw new Error("Survey not found");
-        const data = await res.json();
+        const data: Questionnaire = await res.json();
         setQuestionnaire(data);
-      } catch (error) {
-        toast.error("Failed to load survey data.");
+      } catch (error: unknown) {
+        console.error("Failed to load survey data:", error);
+        toast.error(error instanceof Error ? error.message : "Failed to load survey data.");
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -51,22 +60,13 @@ const AllQuestionsPage: React.FC = () => {
     }
   }, [questionnaireId, router]);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => { void loadData(); }, [loadData]);
 
-  const handleAnswerChange = (qId: string, value: any) => {
+  const handleAnswerChange = (qId: string, value: string | ImageSelectionResult): void => { // Explicitly type value
     setAnswers(prev => ({ ...prev, [qId]: value }));
   };
 
-  /**
-   * =================================================================
-   * MODIFIED CODE: This function now sends data to the backend.
-   * =================================================================
-   * REASON: The original function only logged answers to the console.
-   * This version sends a POST request to the '/api/submissions'
-   * endpoint to save the data.
-   * =================================================================
-   */
-  const handleSubmit = async () => {
+  const handleSubmit = async (): Promise<void> => {
     toast.info("Submitting your survey, please wait...");
 
     try {
@@ -80,14 +80,14 @@ const AllQuestionsPage: React.FC = () => {
       });
 
       if (!res.ok) {
-        const errorData = await res.json();
+        const errorData: { message?: string } = await res.json();
         throw new Error(errorData.message || "Failed to submit survey.");
       }
 
       toast.success("Survey submitted! Thank you.");
-      setTimeout(() => router.push('/'), 2000);
+      setTimeout(() => router.push('/thank-you'), 2000);
 
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Submission Error:", error);
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
     }
@@ -107,8 +107,8 @@ const AllQuestionsPage: React.FC = () => {
             <p className="text-lg text-muted-foreground mt-2">{questionnaire.description}</p>
           </header>
 
-          <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="space-y-6">
-            {questionnaire.questions.map((question, index) => (
+          <form onSubmit={(e: FormEvent) => { e.preventDefault(); void handleSubmit(); }} className="space-y-6"> {/* Add void operator */}
+            {questionnaire.questions.map((question: Question, index: number) => (
                 <Card key={question.id}>
                   <CardHeader>
                     <CardTitle>{index + 1}. {question.label}</CardTitle>
@@ -116,16 +116,16 @@ const AllQuestionsPage: React.FC = () => {
                   <CardContent>
                     {question.type === 'radio' && question.options && (
                         <div className="flex flex-col space-y-2">
-                          {question.options.map(option => (
+                          {question.options.map((option: string) => (
                               <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
-                                <input type="radio" required name={question.id} value={option} onChange={(e) => handleAnswerChange(question.id, e.target.value)} className="form-radio text-blue-600"/>
+                                <input type="radio" required name={question.id} value={option} onChange={(e: ChangeEvent<HTMLInputElement>) => handleAnswerChange(question.id, e.target.value)} className="form-radio text-blue-600"/>
                                 <span>{option}</span>
                               </label>
                           ))}
                         </div>
                     )}
                     {question.type === 'text' && (
-                        <Textarea required placeholder="Your answer..." onChange={(e) => handleAnswerChange(question.id, e.target.value)} />
+                        <Textarea required placeholder="Your answer..." onChange={(e: ChangeEvent<HTMLTextAreaElement>) => handleAnswerChange(question.id, e.target.value)} />
                     )}
                     {question.type === 'image-select' && question.imageOptions && (
                         <ImageSelector
@@ -133,7 +133,7 @@ const AllQuestionsPage: React.FC = () => {
                             instructions={question.instructions || ''}
                             options={question.imageOptions}
                             singleSelect
-                            onSelectionComplete={(selection) => handleAnswerChange(question.id, selection)}
+                            onSelectionComplete={(selection: ImageSelectionResult) => handleAnswerChange(question.id, selection)}
                             labels={question.imageLabels}
                         />
                     )}

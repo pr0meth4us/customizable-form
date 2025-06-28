@@ -1,19 +1,39 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
-import Questionnaire from '@/models/Questionnaire';
+import Questionnaire, { IQuestion } from '@/models/Questionnaire';
 import Submission from '@/models/Submission';
 import bcrypt from 'bcryptjs';
+import { Types } from 'mongoose';
 
-/**
- * POST handler to verify a password and fetch submissions for a specific question.
- */
+interface LeanQuestionnaire {
+    _id: Types.ObjectId;
+    questions: (IQuestion & { _id?: Types.ObjectId })[];
+}
+
+interface LeanSubmission {
+    _id: Types.ObjectId;
+    questionnaireId: Types.ObjectId;
+    answers: Map<string, unknown>;
+    submittedAt: Date;
+}
+
+interface QuestionPassword extends IQuestion {
+    viewPassword?: string;
+}
+
+interface SubmittedAnswer {
+    _id: string;
+    answer: unknown;
+    submittedAt: Date;
+}
+
 export async function POST(
     request: Request,
     { params }: { params: { questionId: string } }
-) {
+): Promise<NextResponse> {
     try {
         const { questionId } = params;
-        const { password } = await request.json();
+        const { password }: { password?: string } = await request.json();
 
         if (!password) {
             return NextResponse.json({ message: 'Password is required' }, { status: 400 });
@@ -21,47 +41,48 @@ export async function POST(
 
         await connectToDatabase();
 
-        // Find the questionnaire that contains the question, and explicitly select the password
-        const questionnaire = await Questionnaire.findOne({ 'questions.id': questionId })
+        const questionnaire: LeanQuestionnaire | null = await Questionnaire.findOne({ 'questions.id': questionId })
             .select('+questions.viewPassword')
-            .lean();
+            .lean<LeanQuestionnaire>();
 
         if (!questionnaire) {
-            return NextResponse.json({ message: 'Question not found' }, { status: 404 });
+            return NextResponse.json({ message: 'Question or Questionnaire not found' }, { status: 404 });
         }
 
-        // Find the specific question within the questionnaire
-        const question = questionnaire.questions.find(q => q.id === questionId);
+        const question: QuestionPassword | undefined = questionnaire.questions.find(
+            (q: IQuestion) => q.id === questionId
+        ) as QuestionPassword;
 
         if (!question || !question.viewPassword) {
-            return NextResponse.json({ message: 'This question is not password-protected' }, { status: 403 });
+            return NextResponse.json(
+                { message: 'This question is not password-protected or does not exist' },
+                { status: 403 }
+            );
         }
 
-        // Compare the provided password with the stored hash
-        const isMatch = await bcrypt.compare(password, question.viewPassword);
+        const isMatch: boolean = await bcrypt.compare(password, question.viewPassword);
 
         if (!isMatch) {
             return NextResponse.json({ message: 'Invalid password' }, { status: 401 });
         }
 
-        // If password matches, fetch all submissions for this questionnaire
-        const submissions = await Submission.find({ questionnaireId: questionnaire._id }).lean();
+        const submissions: LeanSubmission[] = await Submission.find({
+            questionnaireId: questionnaire._id as Types.ObjectId,
+        }).lean<LeanSubmission[]>();
 
-        // Filter the submissions to get answers only for the specific question
-        const relevantAnswers = submissions
+        const relevantAnswers: SubmittedAnswer[] = submissions
             .map(sub => ({
-                _id: sub._id,
-                answer: sub.answers.get(questionId), // Get the specific answer from the Map
+                _id: sub._id.toString(),
+                answer: sub.answers.get(questionId),
                 submittedAt: sub.submittedAt,
             }))
             .filter(item => item.answer !== undefined && item.answer !== null);
 
         return NextResponse.json({
             questionLabel: question.label,
-            answers: relevantAnswers
+            answers: relevantAnswers,
         });
-
-    } catch (error) {
+    } catch (error: unknown) {
         console.error(`API Error fetching submissions for question ${params.questionId}:`, error);
         return NextResponse.json({ message: 'Error fetching submissions' }, { status: 500 });
     }

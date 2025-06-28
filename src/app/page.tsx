@@ -1,34 +1,33 @@
 "use client";
 
-import React, { useState, useEffect, FormEvent } from 'react';
+import React, { useState, useEffect, FormEvent, ChangeEvent } from 'react'; // Added ChangeEvent
 import Link from 'next/link';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input'; // Import Input for password field
-import { Label } from '@/components/ui/label'; // Import Label
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ArrowRight } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { Toaster, toast } from 'sonner';
-import bcrypt from 'bcryptjs'; // Import bcryptjs for password hashing comparison
+import bcrypt from 'bcryptjs';
 
-interface Questionnaire {
+interface QuestionnaireSummary {
   _id: string;
   title: string;
   description: string;
   questions: number;
 }
 
-const AUTHORIZED_PASSWORD_HASH = "$2b$10$uPvm67dO9c5uQtddLSRxfufFsM.ydnsl9Wj75RidMV4NaEPRDAix6"; // Hardcoded hash
+const AUTHORIZED_PASSWORD_HASH = "$2b$10$uPvm67dO9c5uQtddLSRxfufFsM.ydnsl9Wj75RidMV4NaEPRDAix6";
 
 const QuestionnaireListPage: React.FC = () => {
-  const [questionnaires, setQuestionnaires] = useState<Questionnaire[]>([]);
+  const [questionnaires, setQuestionnaires] = useState<QuestionnaireSummary[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false); // New state for authentication
-  const [passwordInput, setPasswordInput] = useState<string>(''); // New state for password input
-  const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false); // State for auth loading
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [passwordInput, setPasswordInput] = useState<string>('');
+  const [isAuthenticating, setIsAuthenticating] = useState<boolean>(false);
 
   useEffect(() => {
-    // Only fetch questionnaires if authenticated
     if (isAuthenticated) {
       const fetchQuestionnaires = async () => {
         try {
@@ -36,19 +35,19 @@ const QuestionnaireListPage: React.FC = () => {
           if (!res.ok) {
             throw new Error('Failed to fetch questionnaires');
           }
-          const data = await res.json();
+          const data: QuestionnaireSummary[] = await res.json();
           setQuestionnaires(data);
-        } catch (error) {
-          console.error(error);
+        } catch (error: unknown) { // Explicitly type error
+          console.error("Error fetching questionnaires:", error);
           toast.error(error instanceof Error ? error.message : "Could not load surveys.");
         } finally {
           setIsLoading(false);
         }
       };
 
-      fetchQuestionnaires();
+      void fetchQuestionnaires();
     } else {
-      setIsLoading(false); // If not authenticated, stop loading for questionnaires
+      setIsLoading(false);
     }
   }, [isAuthenticated]);
 
@@ -56,17 +55,17 @@ const QuestionnaireListPage: React.FC = () => {
     e.preventDefault();
     setIsAuthenticating(true);
     try {
-      const isMatch = await bcrypt.compare(passwordInput, AUTHORIZED_PASSWORD_HASH);
+      const isMatch: boolean = await bcrypt.compare(passwordInput, AUTHORIZED_PASSWORD_HASH);
       if (isMatch) {
         setIsAuthenticated(true);
         toast.success("Authentication successful!");
       } else {
         toast.error("Incorrect password.");
-        setPasswordInput(''); // Clear password on failure
+        setPasswordInput('');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Authentication error:", error);
-      toast.error("An error occurred during authentication.");
+      toast.error(error instanceof Error ? error.message : "An error occurred during authentication.");
     } finally {
       setIsAuthenticating(false);
     }
@@ -89,7 +88,7 @@ const QuestionnaireListPage: React.FC = () => {
                       id="auth-password"
                       type="password"
                       value={passwordInput}
-                      onChange={(e) => setPasswordInput(e.target.value)}
+                      onChange={(e: ChangeEvent<HTMLInputElement>) => setPasswordInput(e.target.value)}
                       placeholder="Enter access password"
                       required
                   />
@@ -127,7 +126,7 @@ const QuestionnaireListPage: React.FC = () => {
 
           {questionnaires.length > 0 ? (
               <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-3">
-                {questionnaires.map((q, index) => (
+                {questionnaires.map((q: QuestionnaireSummary, index: number) => (
                     <motion.div
                         key={q._id}
                         initial={{ opacity: 0, y: 50 }}
