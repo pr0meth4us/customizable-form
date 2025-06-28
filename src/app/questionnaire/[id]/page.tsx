@@ -7,20 +7,24 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/com
 import { ArrowRight } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
+interface QuestionIdOnly {
+  id: string;
+}
+
 interface Questionnaire {
   _id: string;
   title: string;
   description: string;
-  layout: 'multi-page' | 'single-page'; // Ensure layout is part of the interface
-  questions: { id: string }[];
+  layout: 'multi-page' | 'single-page';
+  questions: QuestionIdOnly[];
 }
 
 const StartSurveyPage: React.FC = () => {
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const params = useParams();
   const router = useRouter();
-  const { id } = params;
+  const id = typeof params.id === 'string' ? params.id : '';
 
   useEffect(() => {
     if (id) {
@@ -30,36 +34,25 @@ const StartSurveyPage: React.FC = () => {
           if (!res.ok) {
             throw new Error('Could not fetch questionnaire details.');
           }
-          const data = await res.json();
+          const data: Questionnaire = await res.json();
           setQuestionnaire(data);
-        } catch (error) {
-          console.error(error);
+        } catch (error: unknown) {
+          console.error("Error fetching questionnaire:", error);
           toast.error('Failed to load survey.');
+          router.push('/');
         } finally {
           setIsLoading(false);
         }
       };
       fetchQuestionnaire();
     }
-  }, [id]);
+  }, [id, router]);
 
-  /**
-   * =================================================================
-   * MODIFIED CODE: This function now checks the survey layout.
-   * =================================================================
-   * REASON: The original code always redirected to the multi-page
-   * format. This version reads the `layout` property and routes to
-   * '/all' for single-page surveys.
-   * =================================================================
-   */
   const handleStart = () => {
     if (questionnaire && questionnaire.questions.length > 0) {
-      // Check the layout property of the questionnaire
       if (questionnaire.layout === 'single-page') {
-        // If layout is 'single-page', redirect to the 'all' questions page
         router.push(`/questionnaire/${id}/all`);
       } else {
-        // Otherwise, proceed with the default multi-page layout
         const firstQuestionId = questionnaire.questions[0].id;
         router.push(`/questionnaire/${id}/${firstQuestionId}`);
       }

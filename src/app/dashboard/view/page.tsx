@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useRef, useEffect } from 'react';
+import { useState, FormEvent, useRef, useEffect, ChangeEvent } from 'react'; // Added ChangeEvent
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,16 +9,28 @@ import { Label } from "@/components/ui/label";
 import { Toaster, toast } from 'sonner';
 import { ArrowLeft, Table, LayoutList, Download } from 'lucide-react';
 
+interface ImageAnswer {
+    image?: string;
+    reasons?: string[];
+    customReason?: string;
+}
+
+interface SubmissionAnswers {
+    [questionId: string]: string | ImageAnswer | unknown;
+}
+
 interface Submission {
     _id: string;
-    answers: Record<string, any>;
+    answers: SubmissionAnswers;
     submittedAt: string;
 }
+
+type QuestionType = 'radio' | 'text' | 'image-select';
 
 interface Question {
     id: string;
     label: string;
-    type: 'radio' | 'text' | 'image-select';
+    type: QuestionType;
     options?: string[];
     instructions?: string;
     imageOptions?: string[];
@@ -35,11 +47,11 @@ type ViewMode = 'cards' | 'spreadsheet';
 
 const SubmissionViewerPage = () => {
     const router = useRouter();
-    const [questionnaireId, setQuestionnaireId] = useState('');
-    const [password, setPassword] = useState('');
+    const [questionnaireId, setQuestionnaireId] = useState<string>('');
+    const [password, setPassword] = useState<string>('');
 
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [isLoading, setIsLoading] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+    const [isLoading, setIsLoading] = useState<boolean>(false);
     const [viewMode, setViewMode] = useState<ViewMode>('cards');
 
     const [questionnaireInfo, setQuestionnaireInfo] = useState<QuestionnaireInfo | null>(null);
@@ -89,38 +101,39 @@ const SubmissionViewerPage = () => {
                 headers: { 'Authorization': `Bearer ${password}` }
             });
             if(!subRes.ok) throw new Error("Could not fetch submissions.");
-            const subData = await subRes.json();
+            const subData: Submission[] = await subRes.json();
 
             setSubmissions(subData);
             setIsAuthenticated(true);
             toast.success("Access granted. Showing submissions.");
 
-        } catch (error) {
-            toast.error("An error occurred. Please check the details and try again.");
+        } catch (error: unknown) { // Explicitly type error
+            console.error("An error occurred. Please check the details and try again:", error);
+            toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
         } finally {
             setIsLoading(false);
         }
     };
 
-    const getQuestionLabel = (qId: string) => {
-        return questionnaireInfo?.questions.find(q => q.id === qId)?.label || qId;
+    const getQuestionLabel = (qId: string): string => {
+        return questionnaireInfo?.questions.find((q: Question) => q.id === qId)?.label || qId;
     }
 
-    const getAllQuestionIdsInOrder = () => {
-        return questionnaireInfo?.questions.map(q => q.id) || [];
+    const getAllQuestionIdsInOrder = (): string[] => {
+        return questionnaireInfo?.questions.map((q: Question) => q.id) || [];
     };
 
-    // Helper to format complex answers for CSV/Excel
-    const formatAnswerForExport = (answer: any) => {
+    const formatAnswerForExport = (answer: unknown): string => {
         if (typeof answer === 'object' && answer !== null) {
-            if (answer.image && answer.reasons) {
-                let formatted = `Image: ${answer.image} | Reasons: ${answer.reasons.join(', ')}`;
-                if (answer.customReason) {
-                    formatted += ` | Custom: ${answer.customReason}`;
+            const imageAnswer = answer as ImageAnswer;
+            if (imageAnswer.image && imageAnswer.reasons) {
+                let formatted = `Image: ${imageAnswer.image} | Reasons: ${imageAnswer.reasons.join(', ')}`;
+                if (imageAnswer.customReason) {
+                    formatted += ` | Custom: ${imageAnswer.customReason}`;
                 }
                 return formatted;
             }
-            return JSON.stringify(answer); // Fallback for other objects
+            return JSON.stringify(answer);
         }
         return String(answer);
     };
@@ -132,13 +145,14 @@ const SubmissionViewerPage = () => {
         }
 
         const headers = ["Submission #", "Submitted At", ...getAllQuestionIdsInOrder().map(getQuestionLabel)];
-        let csvContent = headers.map(header => `"${header.replace(/"/g, '""')}"`).join(',') + '\n';
+        // Properly escape headers and join
+        let csvContent = headers.map((header: string) => `"${header.replace(/"/g, '""')}"`).join(',') + '\n';
 
-        submissions.forEach((sub, subIndex) => {
+        submissions.forEach((sub: Submission, subIndex: number) => {
             const rowData = [
                 String(subIndex + 1),
                 `"${new Date(sub.submittedAt).toLocaleString().replace(/"/g, '""')}"`,
-                ...getAllQuestionIdsInOrder().map(qId => {
+                ...getAllQuestionIdsInOrder().map((qId: string) => {
                     const answer = formatAnswerForExport(sub.answers[qId]);
                     return `"${answer.replace(/"/g, '""')}"`;
                 })
@@ -159,26 +173,43 @@ const SubmissionViewerPage = () => {
     };
 
     const exportToExcel = () => {
-        if (!tableRef.current) {
+        if (!tableRef.current || !questionnaireInfo) {
             toast.error("Spreadsheet view must be active to export to Excel.");
             return;
         }
 
-        const tableHTML = tableRef.current.outerHTML;
-        const fileName = `${questionnaireInfo?.title.replace(/\s/g, '_')}_submissions.xls`;
-        const dataType = 'application/vnd.ms-excel';
+        const headers = ["Submission #", "Submitted At", ...getAllQuestionIdsInOrder().map(getQuestionLabel)];
 
-        if (navigator.msSaveOrOpenBlob) {
-            const blob = new Blob(['\ufeff', tableHTML], { type: dataType });
-            navigator.msSaveOrOpenBlob(blob, fileName);
-        } else {
-            const downloadLink = document.createElement('a');
-            document.body.appendChild(downloadLink);
-            downloadLink.href = 'data:' + dataType + ', ' + encodeURIComponent(tableHTML);
-            downloadLink.download = fileName;
-            downloadLink.click();
-            document.body.removeChild(downloadLink);
-        }
+        let excelContent = '<table border="1">';
+        excelContent += '<tr>' + headers.map(header => `<th>${header}</th>`).join('') + '</tr>';
+
+        submissions.forEach((sub: Submission, subIndex: number) => {
+            excelContent += '<tr>';
+            excelContent += `<td>${subIndex + 1}</td>`;
+            excelContent += `<td>${new Date(sub.submittedAt).toLocaleString()}</td>`;
+            getAllQuestionIdsInOrder().forEach((qId: string) => {
+                const answer = formatAnswerForExport(sub.answers[qId]);
+                excelContent += `<td>${answer.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</td>`;
+            });
+            excelContent += '</tr>';
+        });
+        excelContent += '</table>';
+
+        const fileName = `${questionnaireInfo.title.replace(/\s/g, '_')}_submissions.xls`;
+        const blob = new Blob(['\ufeff', excelContent], {
+            type: 'application/vnd.ms-excel;charset=utf-8;'
+        });
+
+        const url = URL.createObjectURL(blob);
+        const downloadLink = document.createElement('a');
+        downloadLink.href = url;
+        downloadLink.download = fileName;
+        downloadLink.style.visibility = 'hidden';
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+        document.body.removeChild(downloadLink);
+        URL.revokeObjectURL(url);
+
         toast.success("Excel file downloaded!");
     };
 
@@ -199,7 +230,7 @@ const SubmissionViewerPage = () => {
                                     id="qId"
                                     type="text"
                                     value={questionnaireId}
-                                    onChange={(e) => setQuestionnaireId(e.target.value)}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setQuestionnaireId(e.target.value)}
                                     placeholder="Enter the questionnaire ID"
                                     className="font-mono"
                                 />
@@ -210,7 +241,7 @@ const SubmissionViewerPage = () => {
                                     id="password"
                                     type="password"
                                     value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
+                                    onChange={(e: ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
                                     placeholder="Enter admin password"
                                     className="font-mono"
                                 />
@@ -219,7 +250,7 @@ const SubmissionViewerPage = () => {
                                 {isLoading ? "Verifying..." : "Get Submissions"}
                             </Button>
                         </form>
-                        <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}> {/* Updated route */}
+                        <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}>
                             <ArrowLeft className="mr-2 h-4 w-4" /> Go Back to Dashboard
                         </Button>
                     </CardContent>
@@ -232,13 +263,11 @@ const SubmissionViewerPage = () => {
         <div className="container mx-auto p-4 md:p-8">
             <Toaster richColors/>
             <div className="flex justify-between items-center mb-8">
-                {/* Dynamic Title */}
                 <h1 className="text-3xl font-bold">Submissions for: {questionnaireInfo?.title || 'Loading...'}</h1>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> View Another
                     </Button>
-                    {/* View Mode Toggle Buttons */}
                     <Button
                         variant={viewMode === 'cards' ? 'default' : 'outline'}
                         onClick={() => setViewMode('cards')}
@@ -251,7 +280,6 @@ const SubmissionViewerPage = () => {
                     >
                         <Table className="mr-2 h-4 w-4" /> Spreadsheet View
                     </Button>
-                    {/* Export Buttons */}
                     {submissions.length > 0 && (
                         <>
                             <Button variant="outline" onClick={exportToCSV}>
@@ -271,7 +299,7 @@ const SubmissionViewerPage = () => {
                 <>
                     {viewMode === 'cards' ? (
                         <div className="space-y-6">
-                            {submissions.map((sub, index) => (
+                            {submissions.map((sub: Submission, index: number) => (
                                 <Card key={sub._id}>
                                     <CardHeader>
                                         <CardTitle>Submission #{index + 1}</CardTitle>
@@ -281,7 +309,7 @@ const SubmissionViewerPage = () => {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="space-y-4">
-                                            {Object.entries(sub.answers).map(([qId, answer]) => (
+                                            {Object.entries(sub.answers).map(([qId, answer]: [string, unknown]) => (
                                                 <div key={qId} className="border-t pt-4 first:border-t-0">
                                                     <p className="font-semibold text-gray-800">{getQuestionLabel(qId)}</p>
                                                     <div className="text-gray-600 mt-1 pl-4">
@@ -309,7 +337,7 @@ const SubmissionViewerPage = () => {
                                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                         Submitted At
                                     </th>
-                                    {getAllQuestionIdsInOrder().map(qId => (
+                                    {getAllQuestionIdsInOrder().map((qId: string) => (
                                         <th key={qId} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                             {getQuestionLabel(qId)}
                                         </th>
@@ -317,7 +345,7 @@ const SubmissionViewerPage = () => {
                                 </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                {submissions.map((sub, subIndex) => (
+                                {submissions.map((sub: Submission, subIndex: number) => (
                                     <tr key={sub._id}>
                                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                                             {subIndex + 1}
@@ -325,7 +353,7 @@ const SubmissionViewerPage = () => {
                                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                             {new Date(sub.submittedAt).toLocaleString()}
                                         </td>
-                                        {getAllQuestionIdsInOrder().map(qId => {
+                                        {getAllQuestionIdsInOrder().map((qId: string) => {
                                             const answer = sub.answers[qId];
                                             const displayAnswer = formatAnswerForExport(answer);
 

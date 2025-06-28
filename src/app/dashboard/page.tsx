@@ -1,22 +1,10 @@
-/*
- * =================================================================
- * FILE: src/app/dashboard/page.tsx
- * =================================================================
- * WHAT'S NEW:
- * - Removed the list of existing questionnaires to enhance security.
- * - Added a dedicated button to navigate to the new submission viewer page.
- * - The primary purpose of this page is now solely for questionnaire creation.
- * - Renamed from 'admin' to 'dashboard' for better context.
- * =================================================================
- */
 "use client";
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import React, { useState } from 'react'; // Added React import
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -24,7 +12,6 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { PlusCircle, Trash2, Eye, Copy, AlertTriangle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
-// Interfaces
 interface Question {
   id: string;
   label: string;
@@ -45,13 +32,13 @@ interface Questionnaire {
 }
 
 interface CreatedInfo {
-  id: string;
+  _id: string;
   title: string;
   password?: string;
 }
 
 // Main Dashboard Component
-const DashboardPage = () => { // Renamed component from AdminPage
+const DashboardPage: React.FC = () => {
   const router = useRouter();
   const [newQuestionnaire, setNewQuestionnaire] = useState<Questionnaire>({
     title: '',
@@ -74,15 +61,16 @@ const DashboardPage = () => { // Renamed component from AdminPage
         body: JSON.stringify(newQuestionnaire),
       });
       if (res.ok) {
-        const data = await res.json();
+        const data: CreatedInfo = await res.json();
         toast.success("Questionnaire created successfully!");
-        setCreatedInfo({ id: data._id, title: data.title, password: data.password });
+        setCreatedInfo({ _id: data._id, title: data.title, password: data.password }); // Use data._id
         setNewQuestionnaire({ title: '', description: '', layout: 'multi-page', questions: [] });
       } else {
         const errorData = await res.json();
         toast.error(`Failed to create questionnaire: ${errorData.message}`);
       }
-    } catch (error) {
+    } catch (error: unknown) {
+      console.error("An error occurred while creating the questionnaire:", error);
       toast.error("An error occurred while creating the questionnaire.");
     }
   };
@@ -90,71 +78,117 @@ const DashboardPage = () => { // Renamed component from AdminPage
   const addQuestion = () => {
     setNewQuestionnaire(prev => ({
       ...prev,
-      questions: [...prev.questions, { id: `q${Date.now()}`, label: '', type: 'radio', options: [''] }]
+      questions: [
+        ...prev.questions,
+        { id: `q${Date.now()}`, label: '', type: 'radio', options: [''] }
+      ]
     }));
   };
 
   const removeQuestion = (qIndex: number) => {
-    setNewQuestionnaire(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== qIndex) }));
+    setNewQuestionnaire(prev => ({
+      ...prev,
+      questions: prev.questions.filter((_, i) => i !== qIndex)
+    }));
   };
 
-  const handleQuestionChange = (qIndex: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (qIndex: number, field: keyof Question, value: Question[keyof Question]) => {
     const updatedQuestions = [...newQuestionnaire.questions];
-    updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: value };
+    const currentQuestion = updatedQuestions[qIndex];
+
+    const newQuestionState: Question = { ...currentQuestion, [field]: value };
+
     if (field === 'type') {
-      updatedQuestions[qIndex].options = value === 'radio' ?
-          [''] : undefined;
-      updatedQuestions[qIndex].imageOptions = value === 'image-select' ? [''] : undefined;
-      updatedQuestions[qIndex].imageLabels = value === 'image-select' ?
-          [''] : undefined;
+      if (value === 'radio') {
+        newQuestionState.options = [''];
+        delete newQuestionState.imageOptions;
+        delete newQuestionState.imageLabels;
+      } else if (value === 'image-select') {
+        newQuestionState.imageOptions = [''];
+        newQuestionState.imageLabels = [''];
+        delete newQuestionState.options;
+      } else if (value === 'text') { // 'text' type
+        delete newQuestionState.options;
+        delete newQuestionState.imageOptions;
+        delete newQuestionState.imageLabels;
+      }
     }
+    updatedQuestions[qIndex] = newQuestionState;
     setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
   };
+
   const handleOptionChange = (qIndex: number, oIndex: number, value: string) => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    if(updatedQuestions[qIndex].options) {
-      updatedQuestions[qIndex].options![oIndex] = value;
-      setNewQuestionnaire(prev => ({...prev, questions: updatedQuestions}));
-    }
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentOptions = updatedQuestions[qIndex].options;
+      if (currentOptions) {
+        const newOptions = [...currentOptions];
+        newOptions[oIndex] = value;
+        updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], options: newOptions };
+      }
+      return { ...prev, questions: updatedQuestions };
+    });
   };
+
   const addOption = (qIndex: number) => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    if(!updatedQuestions[qIndex].options) updatedQuestions[qIndex].options = [];
-    updatedQuestions[qIndex].options!.push('');
-    setNewQuestionnaire(prev => ({...prev, questions: updatedQuestions}));
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentOptions = updatedQuestions[qIndex].options;
+      updatedQuestions[qIndex] = {
+        ...updatedQuestions[qIndex],
+        options: currentOptions ? [...currentOptions, ''] : ['']
+      };
+      return { ...prev, questions: updatedQuestions };
+    });
   };
 
   const removeOption = (qIndex: number, oIndex: number) => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    updatedQuestions[qIndex].options?.splice(oIndex, 1);
-    setNewQuestionnaire(prev => ({...prev, questions: updatedQuestions}));
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentOptions = updatedQuestions[qIndex].options;
+      if (currentOptions) {
+        const newOptions = currentOptions.filter((_, i) => i !== oIndex);
+        updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], options: newOptions };
+      }
+      return { ...prev, questions: updatedQuestions };
+    });
   };
 
-  // Added missing helper functions for image selection fields
-  const handleArrayFieldChange = (qIndex: number, field: 'options' | 'imageOptions' | 'imageLabels', oIndex: number, value: string) => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    const targetArray = updatedQuestions[qIndex][field] as string[] | undefined;
-    if (targetArray) {
-      targetArray[oIndex] = value;
-      setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
-    }
+  const handleArrayFieldChange = (qIndex: number, field: 'imageOptions' | 'imageLabels', oIndex: number, value: string) => {
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentArray = updatedQuestions[qIndex][field];
+      if (currentArray) {
+        const newArray = [...currentArray];
+        newArray[oIndex] = value;
+        updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: newArray };
+      }
+      return { ...prev, questions: updatedQuestions };
+    });
   }
 
-  const addArrayField = (qIndex: number, field: 'options' | 'imageOptions' | 'imageLabels') => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    if (!updatedQuestions[qIndex][field]) {
-      updatedQuestions[qIndex][field] = [];
-    }
-    (updatedQuestions[qIndex][field] as string[]).push('');
-    setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
+  const addArrayField = (qIndex: number, field: 'imageOptions' | 'imageLabels') => {
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentArray = updatedQuestions[qIndex][field];
+      updatedQuestions[qIndex] = {
+        ...updatedQuestions[qIndex],
+        [field]: currentArray ? [...currentArray, ''] : ['']
+      };
+      return { ...prev, questions: updatedQuestions };
+    });
   }
 
-  const removeArrayField = (qIndex: number, field: 'options' | 'imageOptions' | 'imageLabels', oIndex: number) => {
-    const updatedQuestions = [...newQuestionnaire.questions];
-    if (updatedQuestions[qIndex][field]) {
-      (updatedQuestions[qIndex][field] as string[]).splice(oIndex, 1);
-      setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
-    }
+  const removeArrayField = (qIndex: number, field: 'imageOptions' | 'imageLabels', oIndex: number) => {
+    setNewQuestionnaire(prev => {
+      const updatedQuestions = [...prev.questions];
+      const currentArray = updatedQuestions[qIndex][field];
+      if (currentArray) {
+        const newArray = currentArray.filter((_, i) => i !== oIndex);
+        updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: newArray };
+      }
+      return { ...prev, questions: updatedQuestions };
+    });
   }
 
   const setPredefinedOptions = (qIndex: number, type: 'yes-no' | 'likert-5') => {
@@ -162,7 +196,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
     let options: string[] = [];
     if(type === 'yes-no') options = ['Yes', 'No'];
     if(type === 'likert-5') options = ['Strongly Disagree', 'Disagree', 'Neutral', 'Agree', 'Strongly Agree'];
-    updatedQuestions[qIndex].options = options;
+    updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], options: options };
     setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
   };
 
@@ -170,9 +204,8 @@ const DashboardPage = () => { // Renamed component from AdminPage
       <div className="container mx-auto p-4 md:p-8">
         <Toaster richColors />
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Survey Management Dashboard</h1> {/* Updated title */}
-          {/* Button to navigate to the new submission viewer */}
-          <Button variant="outline" onClick={() => router.push('/dashboard/view')}> {/* Updated route */}
+          <h1 className="text-3xl font-bold">Survey Management Dashboard</h1>
+          <Button variant="outline" onClick={() => router.push('/dashboard/view')}>
             <Eye className="mr-2 h-4 w-4" /> View Submissions
           </Button>
         </div>
@@ -200,9 +233,10 @@ const DashboardPage = () => { // Renamed component from AdminPage
                 <div>
                   <Label htmlFor="new-id">Questionnaire ID</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <Input id="new-id" readOnly value={createdInfo?.id} className="font-mono"/>
+                    {/* *** CHANGE 3: Access createdInfo?._id here *** */}
+                    <Input id="new-id" readOnly value={createdInfo?._id || ''} className="font-mono"/>
                     <Button variant="outline" size="icon" onClick={() => {
-                      navigator.clipboard.writeText(createdInfo?.id || '');
+                      navigator.clipboard.writeText(createdInfo?._id || ''); // Use createdInfo?._id
                       toast.success("ID copied to clipboard!");
                     }}> <Copy className="h-4 w-4" /> </Button>
                   </div>
@@ -210,7 +244,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
                 <div>
                   <Label htmlFor="new-password">Admin Password</Label>
                   <div className="flex items-center gap-2 mt-1">
-                    <Input id="new-password" readOnly value={createdInfo?.password} className="font-mono"/>
+                    <Input id="new-password" readOnly value={createdInfo?.password || ''} className="font-mono"/>
                     <Button variant="outline" size="icon" onClick={() => {
                       navigator.clipboard.writeText(createdInfo?.password || '');
                       toast.success("Password copied to clipboard!");
@@ -225,8 +259,8 @@ const DashboardPage = () => { // Renamed component from AdminPage
         <Card>
           <CardHeader><CardTitle>Create New Questionnaire</CardTitle></CardHeader>
           <CardContent className="space-y-6">
-            <Input placeholder="Questionnaire Title" value={newQuestionnaire.title} onChange={(e) => setNewQuestionnaire(prev => ({ ...prev, title: e.target.value }))} />
-            <Textarea placeholder="Questionnaire Description" value={newQuestionnaire.description} onChange={(e) => setNewQuestionnaire(prev => ({ ...prev, description: e.target.value }))} />
+            <Input placeholder="Questionnaire Title" value={newQuestionnaire.title} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setNewQuestionnaire(prev => ({ ...prev, title: e.target.value }))} />
+            <Textarea placeholder="Questionnaire Description" value={newQuestionnaire.description} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNewQuestionnaire(prev => ({ ...prev, description: e.target.value }))} />
             <div>
               <Label>Survey Layout</Label>
               <RadioGroup value={newQuestionnaire.layout} onValueChange={(value: 'multi-page' | 'single-page') => setNewQuestionnaire(prev => ({ ...prev, layout: value }))} className="flex gap-4 mt-2">
@@ -237,10 +271,10 @@ const DashboardPage = () => { // Renamed component from AdminPage
             <div>
               <h3 className="text-lg font-semibold mb-2">Questions</h3>
               {newQuestionnaire.questions.map((q, qIndex) => (
-                  <Card key={qIndex} className="mb-4 p-4 space-y-4 relative">
+                  <Card key={q.id} className="mb-4 p-4 space-y-4 relative">
                     <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeQuestion(qIndex)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
-                    <Input placeholder="Question Label" value={q.label} onChange={(e) => handleQuestionChange(qIndex, 'label', e.target.value)} className="font-semibold" />
-                    <Select value={q.type} onValueChange={(value) => handleQuestionChange(qIndex, 'type', value)}>
+                    <Input placeholder="Question Label" value={q.label} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleQuestionChange(qIndex, 'label', e.target.value)} className="font-semibold" />
+                    <Select value={q.type} onValueChange={(value: Question['type']) => handleQuestionChange(qIndex, 'type', value)}>
                       <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="radio">Radio Buttons</SelectItem>
@@ -257,7 +291,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
                           </div>
                           {q.options?.map((opt, oIndex) => (
                               <div key={oIndex} className="flex items-center gap-2 mb-2">
-                                <Input placeholder={`Option ${oIndex + 1}`} value={opt} onChange={(e) => handleOptionChange(qIndex, oIndex, e.target.value)} />
+                                <Input placeholder={`Option ${oIndex + 1}`} value={opt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleOptionChange(qIndex, oIndex, e.target.value)} />
                                 <Button variant="ghost" size="icon" onClick={() => removeOption(qIndex, oIndex)}><Trash2 className="h-4 w-4" /></Button>
                               </div>
                           ))}
@@ -271,12 +305,12 @@ const DashboardPage = () => { // Renamed component from AdminPage
                     )}
                     {q.type === 'image-select' && (
                         <div className="space-y-4">
-                          <Textarea placeholder="Instructions for image selection" value={q.instructions || ''} onChange={(e) => handleQuestionChange(qIndex, 'instructions', e.target.value)} />
+                          <Textarea placeholder="Instructions for image selection" value={q.instructions || ''} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => handleQuestionChange(qIndex, 'instructions', e.target.value)} />
                           <div>
                             <h4 className="text-sm font-medium mb-2">Image URLs</h4>
                             {q.imageOptions?.map((opt, oIndex) => (
                                 <div key={oIndex} className="flex items-center gap-2 mb-2">
-                                  <Input placeholder={`https://.../image${oIndex + 1}.png`} value={opt} onChange={(e) => handleArrayFieldChange(qIndex, 'imageOptions', oIndex, e.target.value)} />
+                                  <Input placeholder={`https://.../image${oIndex + 1}.png`} value={opt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleArrayFieldChange(qIndex, 'imageOptions', oIndex, e.target.value)} />
                                   <Button variant="ghost" size="icon" onClick={() => removeArrayField(qIndex, 'imageOptions', oIndex)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
@@ -286,7 +320,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
                             <h4 className="text-sm font-medium mb-2">Image Labels</h4>
                             {q.imageLabels?.map((opt, oIndex) => (
                                 <div key={oIndex} className="flex items-center gap-2 mb-2">
-                                  <Input placeholder={`Label ${oIndex + 1}`} value={opt} onChange={(e) => handleArrayFieldChange(qIndex, 'imageLabels', oIndex, e.target.value)} />
+                                  <Input placeholder={`Label ${oIndex + 1}`} value={opt} onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleArrayFieldChange(qIndex, 'imageLabels', oIndex, e.target.value)} />
                                   <Button variant="ghost" size="icon" onClick={() => removeArrayField(qIndex, 'imageLabels', oIndex)}><Trash2 className="h-4 w-4" /></Button>
                                 </div>
                             ))}
@@ -305,4 +339,4 @@ const DashboardPage = () => { // Renamed component from AdminPage
   );
 };
 
-export default DashboardPage; // Renamed export
+export default DashboardPage;
