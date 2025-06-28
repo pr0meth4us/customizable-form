@@ -3,12 +3,9 @@ import { connectToDatabase } from '@/lib/db';
 import Questionnaire from '@/models/Questionnaire';
 import { Types } from 'mongoose';
 
-/**
- * GET handler to fetch a single questionnaire by its ID.
- */
 export async function GET(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    { params: { id } }: { params: { id: string } } // Keep this structure, just remove the `: { params: { id: string } }`
 ) {
   try {
     if (!Types.ObjectId.isValid(id)) {
@@ -22,18 +19,15 @@ export async function GET(
     }
 
     return NextResponse.json(questionnaire);
-  } catch (error) {
+  } catch (error: unknown) { // Explicitly type error as unknown for safety
     console.error(`API Error fetching questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
 
-/**
- * PUT handler to update an existing questionnaire.
- */
 export async function PUT(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    { params: { id } }: { params: { id: string } } // Keep this structure, just remove the `: { params: { id: string } }`
 ) {
   try {
     if (!Types.ObjectId.isValid(id)) {
@@ -47,15 +41,12 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedQuestionnaire);
-  } catch (error) {
+  } catch (error: unknown) { // Explicitly type error as unknown
     console.error(`API Error updating questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error updating questionnaires' }, { status: 500 });
   }
 }
 
-/**
- * DELETE handler to remove a questionnaire.
- */
 export async function DELETE(
     request: Request,
     { params: { id } }: { params: { id: string } }
@@ -71,7 +62,7 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'Questionnaire deleted successfully' });
-  } catch(error) {
+  } catch(error: unknown) {
     console.error(`API Error deleting questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error deleting questionnaires' }, { status: 500 });
   }
