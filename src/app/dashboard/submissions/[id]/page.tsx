@@ -11,7 +11,7 @@ import { ArrowLeft } from 'lucide-react';
 
 interface Submission {
     _id: string;
-    answers: Record<string, any>;
+    answers: Record<string, unknown>;
     submittedAt: string;
 }
 
@@ -44,7 +44,7 @@ const SubmissionViewerPage = () => {
                     router.push('/dashboard'); // Updated route
                 }
             } catch (error) {
-                toast.error("Error fetching questionnaire details.");
+                toast.error("Error fetching questionnaire details.", error);
             } finally {
                 setIsLoading(false);
             }
@@ -84,7 +84,7 @@ const SubmissionViewerPage = () => {
             }
 
         } catch (error) {
-            toast.error("An error occurred during verification.");
+            toast.error("An error occurred during verification.", error);
         }
     };
 
@@ -104,7 +104,7 @@ const SubmissionViewerPage = () => {
                 <Card className="w-full max-w-md">
                     <CardHeader>
                         <CardTitle>View Submissions</CardTitle>
-                        <CardDescription>Enter the password for '{questionnaire?.title}' to see its submissions.</CardDescription>
+                        <CardDescription>Enter the password for &#39;{questionnaire?.title}&#39; to see its submissions.</CardDescription>
                     </CardHeader>
                     <CardContent>
                         <form onSubmit={handlePasswordSubmit} className="space-y-4">

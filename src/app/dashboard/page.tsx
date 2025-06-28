@@ -1,22 +1,10 @@
-/*
- * =================================================================
- * FILE: src/app/dashboard/page.tsx
- * =================================================================
- * WHAT'S NEW:
- * - Removed the list of existing questionnaires to enhance security.
- * - Added a dedicated button to navigate to the new submission viewer page.
- * - The primary purpose of this page is now solely for questionnaire creation.
- * - Renamed from 'admin' to 'dashboard' for better context.
- * =================================================================
- */
 "use client";
-import { useState, useEffect } from 'react';
-import Link from 'next/link';
+import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter, CardDescription } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -83,7 +71,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
         toast.error(`Failed to create questionnaire: ${errorData.message}`);
       }
     } catch (error) {
-      toast.error("An error occurred while creating the questionnaire.");
+      toast.error("An error occurred while creating the questionnaire.", error);
     }
   };
 
@@ -98,7 +86,7 @@ const DashboardPage = () => { // Renamed component from AdminPage
     setNewQuestionnaire(prev => ({ ...prev, questions: prev.questions.filter((_, i) => i !== qIndex) }));
   };
 
-  const handleQuestionChange = (qIndex: number, field: keyof Question, value: any) => {
+  const handleQuestionChange = (qIndex: number, field: keyof Question, value: unknown) => {
     const updatedQuestions = [...newQuestionnaire.questions];
     updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: value };
     if (field === 'type') {

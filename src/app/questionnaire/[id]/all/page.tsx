@@ -32,7 +32,7 @@ const AllQuestionsPage: React.FC = () => {
   const { id: questionnaireId } = params as { id: string };
 
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -43,7 +43,7 @@ const AllQuestionsPage: React.FC = () => {
         const data = await res.json();
         setQuestionnaire(data);
       } catch (error) {
-        toast.error("Failed to load survey data.");
+        toast.error("Failed to load survey data.", error);
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -53,7 +53,7 @@ const AllQuestionsPage: React.FC = () => {
 
   useEffect(() => { loadData(); }, [loadData]);
 
-  const handleAnswerChange = (qId: string, value: any) => {
+  const handleAnswerChange = (qId: string, value: unknown) => {
     setAnswers(prev => ({ ...prev, [qId]: value }));
   };
 

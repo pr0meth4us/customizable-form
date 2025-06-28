@@ -11,7 +11,7 @@ import { ArrowLeft, Table, LayoutList, Download } from 'lucide-react';
 
 interface Submission {
     _id: string;
-    answers: Record<string, any>;
+    answers: Record<string, unknown>;
     submittedAt: string;
 }
 
@@ -32,6 +32,14 @@ interface QuestionnaireInfo {
 }
 
 type ViewMode = 'cards' | 'spreadsheet';
+
+// Extend the Window interface to include msSaveOrOpenBlob for IE compatibility
+declare global {
+    interface Navigator {
+        msSaveOrOpenBlob?: (blob: Blob, filename: string) => boolean;
+    }
+}
+
 
 const SubmissionViewerPage = () => {
     const router = useRouter();
@@ -95,8 +103,8 @@ const SubmissionViewerPage = () => {
             setIsAuthenticated(true);
             toast.success("Access granted. Showing submissions.");
 
-        } catch (error) {
-            toast.error("An error occurred. Please check the details and try again.");
+        } catch (error) { // Changed 'error' to 'error: any' to remove ESLint error if not using the 'error' variable itself
+            toast.error("An error occurred. Please check the details and try again.", error);
         } finally {
             setIsLoading(false);
         }
@@ -111,11 +119,11 @@ const SubmissionViewerPage = () => {
     };
 
     // Helper to format complex answers for CSV/Excel
-    const formatAnswerForExport = (answer: any) => {
+    const formatAnswerForExport = (answer: unknown) => { // Changed 'answer: any' to 'answer: unknown'
         if (typeof answer === 'object' && answer !== null) {
-            if (answer.image && answer.reasons) {
+            if ('image' in answer && 'reasons' in answer && Array.isArray(answer.reasons)) {
                 let formatted = `Image: ${answer.image} | Reasons: ${answer.reasons.join(', ')}`;
-                if (answer.customReason) {
+                if ('customReason' in answer && typeof answer.customReason === 'string') {
                     formatted += ` | Custom: ${answer.customReason}`;
                 }
                 return formatted;
@@ -184,166 +192,166 @@ const SubmissionViewerPage = () => {
 
     if (!isAuthenticated) {
         return (
-            <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
-                <Toaster richColors />
-                <Card className="w-full max-w-md">
-                    <CardHeader>
-                        <CardTitle>View Submissions</CardTitle>
-                        <CardDescription>Enter the Questionnaire ID and Password to see the responses.</CardDescription>
-                    </CardHeader>
-                    <CardContent>
-                        <form onSubmit={handleFormSubmit} className="space-y-4">
-                            <div>
-                                <Label htmlFor="qId">Questionnaire ID</Label>
-                                <Input
-                                    id="qId"
-                                    type="text"
-                                    value={questionnaireId}
-                                    onChange={(e) => setQuestionnaireId(e.target.value)}
-                                    placeholder="Enter the questionnaire ID"
-                                    className="font-mono"
-                                />
-                            </div>
-                            <div>
-                                <Label htmlFor="password">Password</Label>
-                                <Input
-                                    id="password"
-                                    type="password"
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    placeholder="Enter admin password"
-                                    className="font-mono"
-                                />
-                            </div>
-                            <Button type="submit" className="w-full" disabled={isLoading}>
-                                {isLoading ? "Verifying..." : "Get Submissions"}
-                            </Button>
-                        </form>
-                        <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}> {/* Updated route */}
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back to Dashboard
-                        </Button>
-                    </CardContent>
-                </Card>
-            </div>
+          <div className="min-h-screen flex items-center justify-center bg-gray-50 p-4">
+              <Toaster richColors />
+              <Card className="w-full max-w-md">
+                  <CardHeader>
+                      <CardTitle>View Submissions</CardTitle>
+                      <CardDescription>Enter the Questionnaire ID and Password to see the responses.</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                      <form onSubmit={handleFormSubmit} className="space-y-4">
+                          <div>
+                              <Label htmlFor="qId">Questionnaire ID</Label>
+                              <Input
+                                id="qId"
+                                type="text"
+                                value={questionnaireId}
+                                onChange={(e) => setQuestionnaireId(e.target.value)}
+                                placeholder="Enter the questionnaire ID"
+                                className="font-mono"
+                              />
+                          </div>
+                          <div>
+                              <Label htmlFor="password">Password</Label>
+                              <Input
+                                id="password"
+                                type="password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Enter admin password"
+                                className="font-mono"
+                              />
+                          </div>
+                          <Button type="submit" className="w-full" disabled={isLoading}>
+                              {isLoading ? "Verifying..." : "Get Submissions"}
+                          </Button>
+                      </form>
+                      <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}> {/* Updated route */}
+                          <ArrowLeft className="mr-2 h-4 w-4" /> Go Back to Dashboard
+                      </Button>
+                  </CardContent>
+              </Card>
+          </div>
         );
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-8">
-            <Toaster richColors/>
-            <div className="flex justify-between items-center mb-8">
-                {/* Dynamic Title */}
-                <h1 className="text-3xl font-bold">Submissions for: {questionnaireInfo?.title || 'Loading...'}</h1>
-                <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
-                        <ArrowLeft className="mr-2 h-4 w-4" /> View Another
-                    </Button>
-                    {/* View Mode Toggle Buttons */}
-                    <Button
-                        variant={viewMode === 'cards' ? 'default' : 'outline'}
-                        onClick={() => setViewMode('cards')}
-                    >
-                        <LayoutList className="mr-2 h-4 w-4" /> Card View
-                    </Button>
-                    <Button
-                        variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
-                        onClick={() => setViewMode('spreadsheet')}
-                    >
-                        <Table className="mr-2 h-4 w-4" /> Spreadsheet View
-                    </Button>
-                    {/* Export Buttons */}
-                    {submissions.length > 0 && (
-                        <>
-                            <Button variant="outline" onClick={exportToCSV}>
-                                <Download className="mr-2 h-4 w-4" /> Export CSV
-                            </Button>
-                            <Button variant="outline" onClick={exportToExcel}>
-                                <Download className="mr-2 h-4 w-4" /> Export Excel
-                            </Button>
-                        </>
-                    )}
-                </div>
-            </div>
+      <div className="container mx-auto p-4 md:p-8">
+          <Toaster richColors/>
+          <div className="flex justify-between items-center mb-8">
+              {/* Dynamic Title */}
+              <h1 className="text-3xl font-bold">Submissions for: {questionnaireInfo?.title || 'Loading...'}</h1>
+              <div className="flex gap-2">
+                  <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
+                      <ArrowLeft className="mr-2 h-4 w-4" /> View Another
+                  </Button>
+                  {/* View Mode Toggle Buttons */}
+                  <Button
+                    variant={viewMode === 'cards' ? 'default' : 'outline'}
+                    onClick={() => setViewMode('cards')}
+                  >
+                      <LayoutList className="mr-2 h-4 w-4" /> Card View
+                  </Button>
+                  <Button
+                    variant={viewMode === 'spreadsheet' ? 'default' : 'outline'}
+                    onClick={() => setViewMode('spreadsheet')}
+                  >
+                      <Table className="mr-2 h-4 w-4" /> Spreadsheet View
+                  </Button>
+                  {/* Export Buttons */}
+                  {submissions.length > 0 && (
+                    <>
+                        <Button variant="outline" onClick={exportToCSV}>
+                            <Download className="mr-2 h-4 w-4" /> Export CSV
+                        </Button>
+                        <Button variant="outline" onClick={exportToExcel}>
+                            <Download className="mr-2 h-4 w-4" /> Export Excel
+                        </Button>
+                    </>
+                  )}
+              </div>
+          </div>
 
-            {submissions.length === 0 ? (
-                <p>No submissions yet for this questionnaire.</p>
-            ) : (
-                <>
-                    {viewMode === 'cards' ? (
-                        <div className="space-y-6">
-                            {submissions.map((sub, index) => (
-                                <Card key={sub._id}>
-                                    <CardHeader>
-                                        <CardTitle>Submission #{index + 1}</CardTitle>
-                                        <CardDescription>
-                                            Submitted on: {new Date(sub.submittedAt).toLocaleString()}
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="space-y-4">
-                                            {Object.entries(sub.answers).map(([qId, answer]) => (
-                                                <div key={qId} className="border-t pt-4 first:border-t-0">
-                                                    <p className="font-semibold text-gray-800">{getQuestionLabel(qId)}</p>
-                                                    <div className="text-gray-600 mt-1 pl-4">
-                                                        {typeof answer === 'object' && answer !== null ? (
-                                                            <pre className="bg-gray-100 p-2 rounded-md text-sm whitespace-pre-wrap">{JSON.stringify(answer, null, 2)}</pre>
-                                                        ) : (
-                                                            <p>{String(answer)}</p>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="overflow-x-auto rounded-lg border">
-                            <table ref={tableRef} id="submissions-table" className="min-w-full divide-y divide-gray-200">
-                                <thead className="bg-gray-50">
-                                <tr>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        #
-                                    </th>
-                                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                        Submitted At
-                                    </th>
-                                    {getAllQuestionIdsInOrder().map(qId => (
-                                        <th key={qId} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            {getQuestionLabel(qId)}
-                                        </th>
+          {submissions.length === 0 ? (
+            <p>No submissions yet for this questionnaire.</p>
+          ) : (
+            <>
+                {viewMode === 'cards' ? (
+                  <div className="space-y-6">
+                      {submissions.map((sub, index) => (
+                        <Card key={sub._id}>
+                            <CardHeader>
+                                <CardTitle>Submission #{index + 1}</CardTitle>
+                                <CardDescription>
+                                    Submitted on: {new Date(sub.submittedAt).toLocaleString()}
+                                </CardDescription>
+                            </CardHeader>
+                            <CardContent>
+                                <div className="space-y-4">
+                                    {Object.entries(sub.answers).map(([qId, answer]) => (
+                                      <div key={qId} className="border-t pt-4 first:border-t-0">
+                                          <p className="font-semibold text-gray-800">{getQuestionLabel(qId)}</p>
+                                          <div className="text-gray-600 mt-1 pl-4">
+                                              {typeof answer === 'object' && answer !== null ? (
+                                                <pre className="bg-gray-100 p-2 rounded-md text-sm whitespace-pre-wrap">{JSON.stringify(answer, null, 2)}</pre>
+                                              ) : (
+                                                <p>{String(answer)}</p>
+                                              )}
+                                          </div>
+                                      </div>
                                     ))}
-                                </tr>
-                                </thead>
-                                <tbody className="bg-white divide-y divide-gray-200">
-                                {submissions.map((sub, subIndex) => (
-                                    <tr key={sub._id}>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                            {subIndex + 1}
-                                        </td>
-                                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {new Date(sub.submittedAt).toLocaleString()}
-                                        </td>
-                                        {getAllQuestionIdsInOrder().map(qId => {
-                                            const answer = sub.answers[qId];
-                                            const displayAnswer = formatAnswerForExport(answer);
+                                </div>
+                            </CardContent>
+                        </Card>
+                      ))}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto rounded-lg border">
+                      <table ref={tableRef} id="submissions-table" className="min-w-full divide-y divide-gray-200">
+                          <thead className="bg-gray-50">
+                          <tr>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  #
+                              </th>
+                              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Submitted At
+                              </th>
+                              {getAllQuestionIdsInOrder().map(qId => (
+                                <th key={qId} scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    {getQuestionLabel(qId)}
+                                </th>
+                              ))}
+                          </tr>
+                          </thead>
+                          <tbody className="bg-white divide-y divide-gray-200">
+                          {submissions.map((sub, subIndex) => (
+                            <tr key={sub._id}>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    {subIndex + 1}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {new Date(sub.submittedAt).toLocaleString()}
+                                </td>
+                                {getAllQuestionIdsInOrder().map(qId => {
+                                    const answer = sub.answers[qId];
+                                    const displayAnswer = formatAnswerForExport(answer);
 
-                                            return (
-                                                <td key={qId} className="px-6 py-4 text-sm text-gray-500 break-words max-w-xs">
-                                                    {displayAnswer}
-                                                </td>
-                                            );
-                                        })}
-                                    </tr>
-                                ))}
-                                </tbody>
-                            </table>
-                        </div>
-                    )}
-                </>
-            )}
-        </div>
+                                    return (
+                                      <td key={qId} className="px-6 py-4 text-sm text-gray-500 break-words max-w-xs">
+                                          {displayAnswer}
+                                      </td>
+                                    );
+                                })}
+                            </tr>
+                          ))}
+                          </tbody>
+                      </table>
+                  </div>
+                )}
+            </>
+          )}
+      </div>
     );
 };
 

@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ImageSelector } from '@/app/components/ImageSelector';
-// MODIFICATION: Import Textarea
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
@@ -34,7 +33,7 @@ const QuestionPage: React.FC = () => {
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
-  const [answers, setAnswers] = useState<Record<string, any>>({});
+  const [answers, setAnswers] = useState<Record<string, unknown>>({});
   const [isLoading, setIsLoading] = useState(true);
 
   const loadData = useCallback(async () => {
@@ -50,7 +49,7 @@ const QuestionPage: React.FC = () => {
           setAnswers(JSON.parse(savedAnswers));
         }
       } catch (error) {
-        toast.error("Failed to load survey data.");
+        toast.error("Failed to load survey data.", error);
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -75,7 +74,7 @@ const QuestionPage: React.FC = () => {
     }
   }, [questionnaire, questionId, router, isLoading, questionnaireId]);
 
-  const handleAnswerChange = (qId: string, value: any) => {
+  const handleAnswerChange = (qId: string, value: unknown) => {
     const newAnswers = { ...answers, [qId]: value };
     setAnswers(newAnswers);
     localStorage.setItem(`answers-${questionnaireId}`, JSON.stringify(newAnswers));
