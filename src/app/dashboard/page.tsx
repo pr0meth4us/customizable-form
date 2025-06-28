@@ -1,6 +1,6 @@
 /*
  * =================================================================
- * FILE: src/app/admin/page.tsx
+ * FILE: src/app/dashboard/page.tsx
  * =================================================================
  * WHAT'S NEW:
  * - Removed the list of existing questionnaires to enhance security.
