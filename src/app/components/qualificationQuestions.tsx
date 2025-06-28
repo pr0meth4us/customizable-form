@@ -1,10 +1,4 @@
-interface QualificationQuestion {
-    id: string;
-    label: string;
-    options: string[];
-}
-
-const qualificationQuestions: QualificationQuestion[] = [
+const qualificationQuestions = [
     {
         id: 'is_cambodian',
         label: 'Are you Cambodian?',
@@ -25,6 +19,6 @@ const qualificationQuestions: QualificationQuestion[] = [
         label: 'Have you ever used shipping or logistics apps such as DHL, FedEx, Cambodia Post, UPS, USPS, VET Logistic, J&T Express, or others?',
         options: ['Yes', 'No']
     }
-];
+]
 
 export default qualificationQuestions;
