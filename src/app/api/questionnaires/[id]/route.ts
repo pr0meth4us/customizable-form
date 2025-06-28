@@ -1,3 +1,4 @@
+// app/api/questionnaires/[id]/route.ts
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import Questionnaire from '@/models/Questionnaire';
@@ -8,9 +9,12 @@ import { Types } from 'mongoose';
  */
 export async function GET(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    // FIX: Changed params typing to the standard `context` object structure for consistency
+    context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params; // Access id from context.params
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID format' }, { status: 400 });
     }
@@ -22,8 +26,8 @@ export async function GET(
     }
 
     return NextResponse.json(questionnaire);
-  } catch (error) {
-    console.error(`API Error fetching questionnaire ${id}:`, error);
+  } catch (error: unknown) {
+    console.error(`API Error fetching questionnaire ${context.params.id}:`, error);
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
@@ -33,9 +37,12 @@ export async function GET(
  */
 export async function PUT(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    // FIX: Changed params typing to the standard `context` object structure for consistency
+    context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params; // Access id from context.params
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
@@ -47,8 +54,8 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedQuestionnaire);
-  } catch (error) {
-    console.error(`API Error updating questionnaire ${id}:`, error);
+  } catch (error: unknown) {
+    console.error(`API Error updating questionnaire ${context.params.id}:`, error);
     return NextResponse.json({ message: 'Error updating questionnaires' }, { status: 500 });
   }
 }
@@ -58,9 +65,12 @@ export async function PUT(
  */
 export async function DELETE(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    // FIX: Changed params typing to the standard `context` object structure for consistency
+    context: { params: { id: string } }
 ) {
   try {
+    const { id } = context.params; // Access id from context.params
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
@@ -71,8 +81,8 @@ export async function DELETE(
     }
 
     return NextResponse.json({ message: 'Questionnaire deleted successfully' });
-  } catch(error) {
-    console.error(`API Error deleting questionnaire ${id}:`, error);
+  } catch(error: unknown) {
+    console.error(`API Error deleting questionnaire ${context.params.id}:`, error);
     return NextResponse.json({ message: 'Error deleting questionnaires' }, { status: 500 });
   }
 }
