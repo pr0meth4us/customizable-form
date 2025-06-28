@@ -1,3 +1,4 @@
+// src/app/questionnaire/[id]/[questionId]/page.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -50,6 +51,7 @@ const QuestionPage: React.FC = () => {
         }
       } catch (error) {
         console.log(error)
+        toast.error("Failed to load survey data.", error);
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -110,7 +112,8 @@ const QuestionPage: React.FC = () => {
 
       toast.success("Survey completed! Thank you for your time.");
       localStorage.removeItem(`answers-${questionnaireId}`);
-      setTimeout(() => router.push('/'), 2000);
+      // Redirect to the thank you page
+      setTimeout(() => router.push('/thank-you'), 2000); // MODIFIED LINE
     } catch (error) {
       console.error("Submission Error:", error);
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
