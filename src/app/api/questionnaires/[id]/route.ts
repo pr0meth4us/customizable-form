@@ -3,11 +3,17 @@ import { connectToDatabase } from '@/lib/db';
 import Questionnaire from '@/models/Questionnaire';
 import { Types } from 'mongoose';
 
+interface RouteParams {
+  params: Promise<{ id: string }>;
+}
+
 export async function GET(
     request: Request,
-    { params: { id } }: { params: { id: string } } // Keep this structure, just remove the `: { params: { id: string } }`
+    context: RouteParams
 ) {
   try {
+    const { id } = await context.params;
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID format' }, { status: 400 });
     }
@@ -19,17 +25,19 @@ export async function GET(
     }
 
     return NextResponse.json(questionnaire);
-  } catch (error: unknown) { // Explicitly type error as unknown for safety
-    console.error(`API Error fetching questionnaire ${id}:`, error);
+  } catch (error: unknown) {
+    console.error(`API Error fetching questionnaire:`, error);
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
 
 export async function PUT(
     request: Request,
-    { params: { id } }: { params: { id: string } } // Keep this structure, just remove the `: { params: { id: string } }`
+    context: RouteParams
 ) {
   try {
+    const { id } = await context.params;
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
@@ -41,17 +49,19 @@ export async function PUT(
     }
 
     return NextResponse.json(updatedQuestionnaire);
-  } catch (error: unknown) { // Explicitly type error as unknown
-    console.error(`API Error updating questionnaire ${id}:`, error);
+  } catch (error: unknown) {
+    console.error(`API Error updating questionnaire:`, error);
     return NextResponse.json({ message: 'Error updating questionnaires' }, { status: 500 });
   }
 }
 
 export async function DELETE(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    context: RouteParams
 ) {
   try {
+    const { id } = await context.params;
+
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
@@ -63,7 +73,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Questionnaire deleted successfully' });
   } catch(error: unknown) {
-    console.error(`API Error deleting questionnaire ${id}:`, error);
+    console.error(`API Error deleting questionnaire:`, error);
     return NextResponse.json({ message: 'Error deleting questionnaires' }, { status: 500 });
   }
 }

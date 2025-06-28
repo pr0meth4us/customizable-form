@@ -5,6 +5,10 @@ import Submission from '@/models/Submission';
 import bcrypt from 'bcryptjs';
 import { Types } from 'mongoose';
 
+interface RouteParams {
+    params: Promise<{ questionId: string }>;
+}
+
 interface LeanQuestionnaire {
     _id: Types.ObjectId;
     questions: (IQuestion & { _id?: Types.ObjectId })[];
@@ -29,10 +33,10 @@ interface SubmittedAnswer {
 
 export async function POST(
     request: Request,
-    { params }: { params: { questionId: string } }
+    context: RouteParams
 ): Promise<NextResponse> {
     try {
-        const { questionId } = params;
+        const { questionId } = await context.params;
         const { password }: { password?: string } = await request.json();
 
         if (!password) {
@@ -83,7 +87,7 @@ export async function POST(
             answers: relevantAnswers,
         });
     } catch (error: unknown) {
-        console.error(`API Error fetching submissions for question ${params.questionId}:`, error);
+        console.error(`API Error fetching submissions for question:`, error);
         return NextResponse.json({ message: 'Error fetching submissions' }, { status: 500 });
     }
 }

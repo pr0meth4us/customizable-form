@@ -4,11 +4,16 @@ import Questionnaire from '@/models/Questionnaire';
 import { Types } from 'mongoose';
 import bcrypt from 'bcryptjs';
 
+interface RouteParams {
+    params: Promise<{ id: string }>;
+}
+
 export async function POST(
     request: Request,
-    { params: { id } }: { params: { id: string } }
+    context: RouteParams
 ) {
     try {
+        const { id } = await context.params;
         const { password } = await request.json();
 
         if (!Types.ObjectId.isValid(id)) {
@@ -32,7 +37,7 @@ export async function POST(
         }
 
     } catch (error) {
-        console.error(`API Error verifying password for ${id}:`, error);
+        console.error(`API Error verifying password:`, error);
         return NextResponse.json({ message: 'Internal Server Error' }, { status: 500 });
     }
 }
