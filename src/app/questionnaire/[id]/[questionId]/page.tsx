@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { ImageSelector } from '@/app/components/ImageSelector';
+// MODIFICATION: Import Textarea
+import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
@@ -29,7 +31,6 @@ const QuestionPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { id: questionnaireId, questionId } = params as { id: string, questionId: string };
-
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
@@ -50,7 +51,7 @@ const QuestionPage: React.FC = () => {
         }
       } catch (error) {
         toast.error("Failed to load survey data.");
-        router.push('/'); // Redirect if survey fails to load
+        router.push('/');
       } finally {
         setIsLoading(false);
       }
@@ -69,7 +70,7 @@ const QuestionPage: React.FC = () => {
         setCurrentQuestion(questionnaire.questions[qIndex]);
       } else if (!isLoading) {
         toast.error("Question not found.");
-        router.push(`/questionnaire/${questionnaireId}`); // Go back to start page
+        router.push(`/questionnaire/${questionnaireId}`);
       }
     }
   }, [questionnaire, questionId, router, isLoading, questionnaireId]);
@@ -83,22 +84,38 @@ const QuestionPage: React.FC = () => {
   const navigateToQuestion = (direction: 'next' | 'prev') => {
     if (!questionnaire) return;
     const newIndex = direction === 'next' ? currentQuestionIndex + 1 : currentQuestionIndex - 1;
-
     if (newIndex >= 0 && newIndex < questionnaire.questions.length) {
       const nextQuestionId = questionnaire.questions[newIndex].id;
       router.push(`/questionnaire/${questionnaireId}/${nextQuestionId}`);
     } else if (direction === 'next') {
-      // Reached the end, go to a summary/thank you page
       handleSubmit();
     }
   };
 
-  const handleSubmit = () => {
-    console.log("Submitting final answers:", answers);
-    toast.success("Survey completed! Thank you for your time.");
-    localStorage.removeItem(`answers-${questionnaireId}`);
-    // Redirect to a thank you page
-    setTimeout(() => router.push('/'), 2000);
+  const handleSubmit = async () => {
+    toast.info("Submitting your answers, please wait...");
+    try {
+      const res = await fetch('/api/submissions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          questionnaireId: questionnaireId,
+          answers: answers,
+        }),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to submit survey.");
+      }
+
+      toast.success("Survey completed! Thank you for your time.");
+      localStorage.removeItem(`answers-${questionnaireId}`);
+      setTimeout(() => router.push('/'), 2000);
+    } catch (error) {
+      console.error("Submission Error:", error);
+      toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
+    }
   }
 
   if (isLoading || !currentQuestion) {
@@ -109,53 +126,65 @@ const QuestionPage: React.FC = () => {
   const isLastQuestion = currentQuestionIndex === (questionnaire?.questions.length ?? 0) - 1;
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
-      <Toaster />
-      <Card className="w-full max-w-3xl animate-fade-in">
-        <CardHeader>
-          <Progress value={progressValue} className="mb-4" />
-          <CardTitle className="text-2xl">{currentQuestion.label}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          {currentQuestion.type === 'radio' && (
-            <div className="flex flex-col space-y-2">
-              {currentQuestion.options.map(option => (
-                <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
-                  <input
-                    type="radio"
-                    name={currentQuestion.id}
-                    value={option}
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center p-4">
+        <Toaster />
+        <Card className="w-full max-w-3xl animate-fade-in">
+          <CardHeader>
+            <Progress value={progressValue} className="mb-4" />
+            <CardTitle className="text-2xl">{currentQuestion.label}</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {currentQuestion.type === 'radio' && (
+                <div className="flex flex-col space-y-2">
+                  {currentQuestion.options.map(option => (
+                      <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                        <input
+                            type="radio"
+                            name={currentQuestion.id}
+                            value={option}
+                            onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
+                            checked={answers[currentQuestion.id] === option}
+                            className="form-radio text-blue-600 focus:ring-blue-500 h-4 w-4"
+                        />
+                        <span>{option}</span>
+                      </label>
+                  ))}
+                </div>
+            )}
+            {/*
+            * =================================================================
+            * MODIFIED CODE: Added this block to render text inputs.
+            * =================================================================
+          */}
+            {currentQuestion.type === 'text' && (
+                <Textarea
+                    placeholder="Your answer..."
                     onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                    checked={answers[currentQuestion.id] === option}
-                    className="form-radio text-blue-600 focus:ring-blue-500 h-4 w-4"
-                  />
-                  <span>{option}</span>
-                </label>
-              ))}
-            </div>
-          )}
-          {currentQuestion.type === 'image-select' && currentQuestion.imageOptions && (
-            <ImageSelector
-              title=""
-              instructions={currentQuestion.instructions || ''}
-              options={currentQuestion.imageOptions}
-              singleSelect
-              onSelectionComplete={(selection) => handleAnswerChange(currentQuestion.id, selection)}
-              labels={currentQuestion.imageLabels}
-            />
-          )}
-        </CardContent>
-      </Card>
-      <div className="flex justify-between w-full max-w-3xl mt-6">
-        <Button variant="outline" onClick={() => navigateToQuestion('prev')} disabled={currentQuestionIndex === 0}>
-          <ArrowLeft className="mr-2 h-4 w-4" /> Previous
-        </Button>
-        <Button onClick={() => navigateToQuestion('next')}>
-          {isLastQuestion ? 'Submit' : 'Next'}
-          {isLastQuestion ? <CheckCircle className="ml-2 h-4 w-4" /> : <ArrowRight className="ml-2 h-4 w-4" />}
-        </Button>
+                    value={answers[currentQuestion.id] || ''}
+                />
+            )}
+            {currentQuestion.type === 'image-select' && currentQuestion.imageOptions && (
+                <ImageSelector
+                    title=""
+                    instructions={currentQuestion.instructions || ''}
+                    options={currentQuestion.imageOptions}
+                    singleSelect
+                    onSelectionComplete={(selection) => handleAnswerChange(currentQuestion.id, selection)}
+                    labels={currentQuestion.imageLabels}
+                />
+            )}
+          </CardContent>
+        </Card>
+        <div className="flex justify-between w-full max-w-3xl mt-6">
+          <Button variant="outline" onClick={() => navigateToQuestion('prev')} disabled={currentQuestionIndex === 0}>
+            <ArrowLeft className="mr-2 h-4 w-4" /> Previous
+          </Button>
+          <Button onClick={() => navigateToQuestion('next')}>
+            {isLastQuestion ? 'Submit' : 'Next'}
+            {isLastQuestion ? <CheckCircle className="ml-2 h-4 w-4" /> : <ArrowRight className="ml-2 h-4 w-4" />}
+          </Button>
+        </div>
       </div>
-    </div>
   );
 };
 

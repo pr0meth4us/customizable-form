@@ -11,6 +11,7 @@ interface Questionnaire {
   _id: string;
   title: string;
   description: string;
+  layout: 'multi-page' | 'single-page'; // Ensure layout is part of the interface
   questions: { id: string }[];
 }
 
@@ -42,11 +43,26 @@ const StartSurveyPage: React.FC = () => {
     }
   }, [id]);
 
+  /**
+   * =================================================================
+   * MODIFIED CODE: This function now checks the survey layout.
+   * =================================================================
+   * REASON: The original code always redirected to the multi-page
+   * format. This version reads the `layout` property and routes to
+   * '/all' for single-page surveys.
+   * =================================================================
+   */
   const handleStart = () => {
     if (questionnaire && questionnaire.questions.length > 0) {
-      // Get the ID of the first question
-      const firstQuestionId = questionnaire.questions[0].id;
-      router.push(`/questionnaire/${id}/${firstQuestionId}`);
+      // Check the layout property of the questionnaire
+      if (questionnaire.layout === 'single-page') {
+        // If layout is 'single-page', redirect to the 'all' questions page
+        router.push(`/questionnaire/${id}/all`);
+      } else {
+        // Otherwise, proceed with the default multi-page layout
+        const firstQuestionId = questionnaire.questions[0].id;
+        router.push(`/questionnaire/${id}/${firstQuestionId}`);
+      }
     } else {
       toast.error("This survey has no questions.");
     }
@@ -61,21 +77,21 @@ const StartSurveyPage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <Toaster />
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl">{questionnaire.title}</CardTitle>
-          <CardDescription className="text-lg pt-2">{questionnaire.description}</CardDescription>
-        </CardHeader>
-        <CardContent className="text-center">
-          <p className="text-gray-600 mb-8">This survey contains {questionnaire.questions.length} questions. Please answer them to the best of your ability.</p>
-          <Button size="lg" onClick={handleStart}>
-            Begin Survey <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
-        </CardContent>
-      </Card>
-    </div>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <Toaster />
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center">
+            <CardTitle className="text-3xl">{questionnaire.title}</CardTitle>
+            <CardDescription className="text-lg pt-2">{questionnaire.description}</CardDescription>
+          </CardHeader>
+          <CardContent className="text-center">
+            <p className="text-gray-600 mb-8">This survey contains {questionnaire.questions.length} questions. Please answer them to the best of your ability.</p>
+            <Button size="lg" onClick={handleStart}>
+              Begin Survey <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
   );
 };
 
