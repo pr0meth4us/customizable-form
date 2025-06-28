@@ -1,44 +1,53 @@
-import mongoose, { Schema, Document } from 'mongoose';
 
-export interface IQuestion {
-  id: string;
-  label: string;
-  type: 'radio' | 'text' | 'image-select';
-  options?: string[];
-  instructions?: string;
-  imageOptions?: string[];
-  imageLabels?: string[];
-  viewPassword?: string;
-}
+import mongoose, { Schema, model, models } from 'mongoose';
 
-export interface IQuestionnaire extends Document {
-  title: string;
-  description: string;
-  layout: 'multi-page' | 'single-page';
-  questions: IQuestion[];
-  password?: string; // Hashed password
-  createdAt: Date;
-}
-
-const QuestionSchema: Schema = new Schema({
-  id: { type: String, required: true },
+const questionSchema = new Schema({
+  id: {
+    type: String,
+    required: true,
+    unique: true,
+    default: () => new mongoose.Types.ObjectId().toHexString()
+  },
   label: { type: String, required: true },
-  type: { type: String, required: true },
   options: [{ type: String }],
-  instructions: { type: String },
-  imageOptions: [{ type: String }],
-  imageLabels: [{ type: String }],
-  viewPassword: { type: String, select: false },
+  type: {
+    type: String,
+    enum: ['radio', 'text', 'image-select'],
+    required: true,
+    default: 'radio'
+  },
+  instructions: String,
+  imageOptions: [String],
+  imageLabels: [String],
 });
 
-const QuestionnaireSchema: Schema = new Schema({
-  title: { type: String, required: true },
-  description: { type: String, required: true },
-  layout: { type: String, enum: ['multi-page', 'single-page'], default: 'single-page' },
-  questions: [QuestionSchema],
-  password: { type: String, select: false },
-  createdAt: { type: Date, default: Date.now },
+const questionnaireSchema = new Schema({
+  title: {
+    type: String,
+    required: [true, 'Questionnaire title is required.'],
+    trim: true,
+  },
+  description: {
+    type: String,
+    trim: true,
+  },
+  // NEW: Password field for viewing submissions
+  password: {
+    type: String,
+    required: true,
+    select: false, // Don't include password in general queries
+  },
+  layout: {
+    type: String,
+    enum: ['multi-page', 'single-page'],
+    default: 'multi-page',
+  },
+  questions: [questionSchema],
+  createdAt: {
+    type: Date,
+    default: Date.now,
+  },
 });
 
-const Questionnaire = mongoose.models.Questionnaire || mongoose.model<IQuestionnaire>('Questionnaire', QuestionnaireSchema);
+const Questionnaire = models.Questionnaire || model('Questionnaire', questionnaireSchema);
 export default Questionnaire;
