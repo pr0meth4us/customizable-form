@@ -3,13 +3,14 @@ import { connectToDatabase } from '@/lib/db';
 import Questionnaire from '@/models/Questionnaire';
 import { Types } from 'mongoose';
 
+/**
+ * GET handler to fetch a single questionnaire by its ID.
+ */
 export async function GET(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params: { id } }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID format' }, { status: 400 });
     }
@@ -22,7 +23,7 @@ export async function GET(
 
     return NextResponse.json(questionnaire);
   } catch (error) {
-    console.error(`API Error fetching questionnaire:`, error);
+    console.error(`API Error fetching questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
@@ -32,15 +33,12 @@ export async function GET(
  */
 export async function PUT(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params: { id } }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
-
     const body = await request.json();
     await connectToDatabase();
     const updatedQuestionnaire = await Questionnaire.findByIdAndUpdate(id, body, { new: true, runValidators: true });
@@ -50,7 +48,7 @@ export async function PUT(
 
     return NextResponse.json(updatedQuestionnaire);
   } catch (error) {
-    console.error(`API Error updating questionnaire:`, error);
+    console.error(`API Error updating questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error updating questionnaires' }, { status: 500 });
   }
 }
@@ -60,15 +58,12 @@ export async function PUT(
  */
 export async function DELETE(
     request: Request,
-    { params }: { params: Promise<{ id: string }> }
+    { params: { id } }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
-
     if (!Types.ObjectId.isValid(id)) {
       return NextResponse.json({ message: 'Invalid Questionnaire ID' }, { status: 400 });
     }
-
     await connectToDatabase();
     const deletedQuestionnaire = await Questionnaire.findByIdAndDelete(id);
     if (!deletedQuestionnaire) {
@@ -77,7 +72,7 @@ export async function DELETE(
 
     return NextResponse.json({ message: 'Questionnaire deleted successfully' });
   } catch(error) {
-    console.error(`API Error deleting questionnaire:`, error);
+    console.error(`API Error deleting questionnaire ${id}:`, error);
     return NextResponse.json({ message: 'Error deleting questionnaires' }, { status: 500 });
   }
 }
