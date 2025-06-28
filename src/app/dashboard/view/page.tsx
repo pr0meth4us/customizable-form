@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, useRef, useEffect } from 'react'; // Added useEffect
+import { useState, FormEvent, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -52,9 +52,10 @@ const SubmissionViewerPage = () => {
         if (isAuthenticated && questionnaireInfo?.title) {
             document.title = `Submissions: ${questionnaireInfo.title}`;
         } else {
-            document.title = "View Submissions"; // Default title when not authenticated or no questionnaire selected
+            document.title = "View Submissions";
         }
     }, [isAuthenticated, questionnaireInfo?.title]);
+
 
     const handleFormSubmit = async (e: FormEvent) => {
         e.preventDefault();
@@ -64,6 +65,7 @@ const SubmissionViewerPage = () => {
         }
         setIsLoading(true);
         try {
+            // Step 1: Verify credentials are correct
             const verifyRes = await fetch(`/api/questionnaires/${questionnaireId}/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -76,11 +78,13 @@ const SubmissionViewerPage = () => {
                 return;
             }
 
+            // Step 2: Fetch questionnaire details (for question labels)
             const infoRes = await fetch(`/api/questionnaires/${questionnaireId}`);
             if(!infoRes.ok) throw new Error("Could not fetch questionnaire details.");
             const infoData: QuestionnaireInfo = await infoRes.json();
             setQuestionnaireInfo(infoData);
 
+            // Step 3: Fetch submissions using password as auth
             const subRes = await fetch(`/api/questionnaires/${questionnaireId}/submissions`, {
                 headers: { 'Authorization': `Bearer ${password}` }
             });
@@ -106,6 +110,7 @@ const SubmissionViewerPage = () => {
         return questionnaireInfo?.questions.map(q => q.id) || [];
     };
 
+    // Helper to format complex answers for CSV/Excel
     const formatAnswerForExport = (answer: any) => {
         if (typeof answer === 'object' && answer !== null) {
             if (answer.image && answer.reasons) {
@@ -115,7 +120,7 @@ const SubmissionViewerPage = () => {
                 }
                 return formatted;
             }
-            return JSON.stringify(answer);
+            return JSON.stringify(answer); // Fallback for other objects
         }
         return String(answer);
     };
@@ -214,8 +219,8 @@ const SubmissionViewerPage = () => {
                                 {isLoading ? "Verifying..." : "Get Submissions"}
                             </Button>
                         </form>
-                        <Button variant="link" className="mt-4" onClick={() => router.push('/admin')}>
-                            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back to Admin
+                        <Button variant="link" className="mt-4" onClick={() => router.push('/dashboard')}> {/* Updated route */}
+                            <ArrowLeft className="mr-2 h-4 w-4" /> Go Back to Dashboard
                         </Button>
                     </CardContent>
                 </Card>
@@ -227,7 +232,8 @@ const SubmissionViewerPage = () => {
         <div className="container mx-auto p-4 md:p-8">
             <Toaster richColors/>
             <div className="flex justify-between items-center mb-8">
-                <h1 className="text-3xl font-bold">Submissions for: {questionnaireInfo?.title}</h1>
+                {/* Dynamic Title */}
+                <h1 className="text-3xl font-bold">Submissions for: {questionnaireInfo?.title || 'Loading...'}</h1>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setIsAuthenticated(false)}>
                         <ArrowLeft className="mr-2 h-4 w-4" /> View Another

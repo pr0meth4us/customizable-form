@@ -6,10 +6,10 @@
  * - Removed the list of existing questionnaires to enhance security.
  * - Added a dedicated button to navigate to the new submission viewer page.
  * - The primary purpose of this page is now solely for questionnaire creation.
+ * - Renamed from 'admin' to 'dashboard' for better context.
  * =================================================================
  */
 "use client";
-
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -50,8 +50,8 @@ interface CreatedInfo {
   password?: string;
 }
 
-// Main Admin Component
-const AdminPage = () => {
+// Main Dashboard Component
+const DashboardPage = () => { // Renamed component from AdminPage
   const router = useRouter();
   const [newQuestionnaire, setNewQuestionnaire] = useState<Questionnaire>({
     title: '',
@@ -73,7 +73,6 @@ const AdminPage = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newQuestionnaire),
       });
-
       if (res.ok) {
         const data = await res.json();
         toast.success("Questionnaire created successfully!");
@@ -103,13 +102,14 @@ const AdminPage = () => {
     const updatedQuestions = [...newQuestionnaire.questions];
     updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: value };
     if (field === 'type') {
-      updatedQuestions[qIndex].options = value === 'radio' ? [''] : undefined;
+      updatedQuestions[qIndex].options = value === 'radio' ?
+          [''] : undefined;
       updatedQuestions[qIndex].imageOptions = value === 'image-select' ? [''] : undefined;
-      updatedQuestions[qIndex].imageLabels = value === 'image-select' ? [''] : undefined;
+      updatedQuestions[qIndex].imageLabels = value === 'image-select' ?
+          [''] : undefined;
     }
     setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
   };
-
   const handleOptionChange = (qIndex: number, oIndex: number, value: string) => {
     const updatedQuestions = [...newQuestionnaire.questions];
     if(updatedQuestions[qIndex].options) {
@@ -117,7 +117,6 @@ const AdminPage = () => {
       setNewQuestionnaire(prev => ({...prev, questions: updatedQuestions}));
     }
   };
-
   const addOption = (qIndex: number) => {
     const updatedQuestions = [...newQuestionnaire.questions];
     if(!updatedQuestions[qIndex].options) updatedQuestions[qIndex].options = [];
@@ -131,7 +130,7 @@ const AdminPage = () => {
     setNewQuestionnaire(prev => ({...prev, questions: updatedQuestions}));
   };
 
-  // NEW: Added missing helper functions for image selection fields
+  // Added missing helper functions for image selection fields
   const handleArrayFieldChange = (qIndex: number, field: 'options' | 'imageOptions' | 'imageLabels', oIndex: number, value: string) => {
     const updatedQuestions = [...newQuestionnaire.questions];
     const targetArray = updatedQuestions[qIndex][field] as string[] | undefined;
@@ -171,9 +170,9 @@ const AdminPage = () => {
       <div className="container mx-auto p-4 md:p-8">
         <Toaster richColors />
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
-          {/* NEW: Button to navigate to the submission viewer */}
-          <Button variant="outline" onClick={() => router.push('/admin/view')}>
+          <h1 className="text-3xl font-bold">Survey Management Dashboard</h1> {/* Updated title */}
+          {/* Button to navigate to the new submission viewer */}
+          <Button variant="outline" onClick={() => router.push('/dashboard/view')}> {/* Updated route */}
             <Eye className="mr-2 h-4 w-4" /> View Submissions
           </Button>
         </div>
@@ -305,4 +304,5 @@ const AdminPage = () => {
       </div>
   );
 };
-export default AdminPage;
+
+export default DashboardPage; // Renamed export
