@@ -10,7 +10,8 @@ export async function GET() {
     await connectToDatabase();
     const questionnaires = await Questionnaire.find({}).select('_id title description').lean();
     return NextResponse.json(questionnaires);
-  } catch (error) {
+  } catch (_error) { // Keep '_error' for consistency and to signal intent
+    console.error("Error fetching questionnaires:", _error); // Log the error here
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
