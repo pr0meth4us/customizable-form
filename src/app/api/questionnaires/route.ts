@@ -1,45 +1,55 @@
 import { NextResponse } from 'next/server';
 import { connectToDatabase } from '@/lib/db';
 import Questionnaire from '@/models/Questionnaire';
+import crypto from 'crypto'; // For password generation
+import bcrypt from 'bcryptjs';
 
-/**
- * GET handler to fetch all questionnaires.
- */
+// GET all questionnaires (no changes)
 export async function GET() {
   try {
     await connectToDatabase();
-    // Find all questionnaires, but only return essential fields for the list view
-    const questionnaires = await Questionnaire.find({}).select('_id title description questions._id').lean();
-
-    // Remap questions to just get a count
-    const responseData = questionnaires.map(q => ({
-      ...q,
-      questions: q.questions.length
-    }));
-
-    return NextResponse.json(responseData);
+    const questionnaires = await Questionnaire.find({}).select('_id title description').lean();
+    return NextResponse.json(questionnaires);
   } catch (error) {
-    console.error("API Error fetching questionnaires:", error);
     return NextResponse.json({ message: 'Error fetching questionnaires' }, { status: 500 });
   }
 }
 
-/**
- * POST handler to create a new questionnaires.
- */
+// POST a new questionnaire
 export async function POST(request: Request) {
   try {
     const body = await request.json();
     await connectToDatabase();
-    const newQuestionnaire = new Questionnaire(body);
-    const savedQuestionnaire = await newQuestionnaire.save();
-    return NextResponse.json(savedQuestionnaire, { status: 201 });
+
+    // Generate a simple, human-readable password
+    const plainTextPassword = crypto.randomBytes(4).toString('hex'); // This is the password the user will see once.
+
+    // === START MODIFICATION ===
+    // Hash the password before saving
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(plainTextPassword, salt);
+    // === END MODIFICATION ===
+
+
+    const newQuestionnaire = new Questionnaire({
+      ...body,
+      // Save the HASHED password, not the plaintext one
+      password: hashedPassword
+    });
+    await newQuestionnaire.save();
+
+    // Return the saved object, but send the PLAINTEXT password back for one-time display
+    const responseData = {
+      _id: newQuestionnaire._id,
+      title: newQuestionnaire.title,
+      password: plainTextPassword, // Send the original password back to the creator
+    };
+    return NextResponse.json(responseData, { status: 201 });
   } catch (error) {
-    console.error("API Error creating questionnaires:", error);
-    // Provide more specific error for validation issues
+    console.error("API Error creating questionnaire:", error);
     if (error instanceof Error && error.name === 'ValidationError') {
       return NextResponse.json({ message: error.message }, { status: 400 });
     }
-    return NextResponse.json({ message: 'Error creating questionnaires' }, { status: 500 });
+    return NextResponse.json({ message: 'Error creating questionnaire' }, { status: 500 });
   }
 }

@@ -14,23 +14,22 @@ const geistMono = localFont({
 });
 
 export const metadata: Metadata = {
-  title: "Content Design Survey",
-  description: "" +
-    "",
+  title: "Customizable Form & Survey Tool", // A more general default title
+  description: "Create and manage custom questionnaires and view submissions.",
 };
 
 export default function RootLayout({
-  children,
-}: Readonly<{
+                                     children,
+                                   }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+      <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        {children}
+      {children}
       </body>
-    </html>
+      </html>
   );
 }
