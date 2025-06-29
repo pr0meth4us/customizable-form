@@ -1,4 +1,3 @@
-// src/app/questionnaire/[id]/[questionId]/page.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -10,6 +9,7 @@ import { ImageSelector } from '@/app/components/ImageSelector';
 import { Textarea } from '@/components/ui/textarea';
 import { ArrowLeft, ArrowRight, CheckCircle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import Image from 'next/image';
 
 interface Question {
   id: string;
@@ -19,6 +19,8 @@ interface Question {
   instructions?: string;
   imageOptions?: string[];
   imageLabels?: string[];
+  imageUrl?: string;
+  reasons?: string[];
 }
 
 interface Questionnaire {
@@ -31,6 +33,7 @@ const QuestionPage: React.FC = () => {
   const params = useParams();
   const router = useRouter();
   const { id: questionnaireId, questionId } = params as { id: string, questionId: string };
+
   const [questionnaire, setQuestionnaire] = useState<Questionnaire | null>(null);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(-1);
@@ -50,8 +53,7 @@ const QuestionPage: React.FC = () => {
           setAnswers(JSON.parse(savedAnswers));
         }
       } catch (error) {
-        console.log(error)
-        toast.error("Failed to load survey data.", error);
+        toast.error("Failed to load survey data.", error instanceof Error ? {description: error.message} : undefined);
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -104,7 +106,6 @@ const QuestionPage: React.FC = () => {
           answers: answers,
         }),
       });
-
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to submit survey.");
@@ -112,8 +113,8 @@ const QuestionPage: React.FC = () => {
 
       toast.success("Survey completed! Thank you for your time.");
       localStorage.removeItem(`answers-${questionnaireId}`);
-      // Redirect to the thank you page
-      setTimeout(() => router.push('/thank-you'), 2000); // MODIFIED LINE
+      setTimeout(() => router.push('/thank-you'), 2000);
+
     } catch (error) {
       console.error("Submission Error:", error);
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
@@ -136,10 +137,25 @@ const QuestionPage: React.FC = () => {
           <CardTitle className="text-2xl">{currentQuestion.label}</CardTitle>
         </CardHeader>
         <CardContent>
+          {currentQuestion.instructions && <p className="text-muted-foreground mb-4">{currentQuestion.instructions}</p>}
+
+          {currentQuestion.imageUrl && (
+            <div className="relative w-full h-64 mb-4 rounded-md overflow-hidden border">
+              <Image
+                src={currentQuestion.imageUrl}
+                alt={`Instructional image for: ${currentQuestion.label}`}
+                fill
+                style={{ objectFit: 'contain' }}
+                unoptimized
+              />
+            </div>
+          )}
+
           {currentQuestion.type === 'radio' && (
             <div className="flex flex-col space-y-2">
-              {currentQuestion.options.map(option => (
-                <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+              {/* MODIFIED: Changed key to ensure uniqueness */}
+              {currentQuestion.options.map((option, optionIndex) => (
+                <label key={`${option}-${optionIndex}`} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
                   <input
                     type="radio"
                     name={currentQuestion.id}
@@ -153,16 +169,11 @@ const QuestionPage: React.FC = () => {
               ))}
             </div>
           )}
-          {/*
-            * =================================================================
-            * MODIFIED CODE: Added this block to render text inputs.
-            * =================================================================
-          */}
           {currentQuestion.type === 'text' && (
             <Textarea
               placeholder="Your answer..."
               onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-              value={String(answers[currentQuestion.id] || '')} // Explicitly cast to string
+              value={String(answers[currentQuestion.id] || '')}
             />
           )}
           {currentQuestion.type === 'image-select' && currentQuestion.imageOptions && (
@@ -173,6 +184,7 @@ const QuestionPage: React.FC = () => {
               singleSelect
               onSelectionComplete={(selection) => handleAnswerChange(currentQuestion.id, selection)}
               labels={currentQuestion.imageLabels}
+              reasons={currentQuestion.reasons}
             />
           )}
         </CardContent>

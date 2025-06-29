@@ -1,4 +1,3 @@
-// src/app/questionnaire/[id]/page.tsx
 "use client";
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -9,6 +8,7 @@ import { ImageSelector } from '@/app/components/ImageSelector';
 import { Textarea } from '@/components/ui/textarea';
 import { CheckCircle } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
+import Image from 'next/image';
 
 interface Question {
   id: string;
@@ -18,6 +18,8 @@ interface Question {
   instructions?: string;
   imageOptions?: string[];
   imageLabels?: string[];
+  imageUrl?: string;
+  reasons?: string[];
 }
 
 interface Questionnaire {
@@ -44,7 +46,7 @@ const AllQuestionsPage: React.FC = () => {
         const data = await res.json();
         setQuestionnaire(data);
       } catch (error) {
-        toast.error("Failed to load survey data.", error);
+        toast.error("Failed to load survey data.", error instanceof Error ? {description: error.message} : undefined);
         router.push('/');
       } finally {
         setIsLoading(false);
@@ -60,7 +62,6 @@ const AllQuestionsPage: React.FC = () => {
 
   const handleSubmit = async () => {
     toast.info("Submitting your survey, please wait...");
-
     try {
       const res = await fetch('/api/submissions', {
         method: 'POST',
@@ -70,22 +71,19 @@ const AllQuestionsPage: React.FC = () => {
           answers: answers,
         }),
       });
-
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.message || "Failed to submit survey.");
       }
 
       toast.success("Survey submitted! Thank you.");
-      // Redirect to the thank you page
-      setTimeout(() => router.push('/thank-you'), 2000); // MODIFIED LINE
+      setTimeout(() => router.push('/thank-you'), 2000);
 
     } catch (error) {
       console.error("Submission Error:", error);
       toast.error(error instanceof Error ? error.message : "An unexpected error occurred.");
     }
   }
-
 
   if (isLoading || !questionnaire) {
     return <div className="min-h-screen flex items-center justify-center">Loading survey...</div>;
@@ -107,10 +105,25 @@ const AllQuestionsPage: React.FC = () => {
                 <CardTitle>{index + 1}. {question.label}</CardTitle>
               </CardHeader>
               <CardContent>
+                {question.instructions && <p className="text-muted-foreground mb-4">{question.instructions}</p>}
+
+                {question.imageUrl && (
+                  <div className="relative w-full h-64 mb-4 rounded-md overflow-hidden border">
+                    <Image
+                      src={question.imageUrl}
+                      alt={`Instructional image for: ${question.label}`}
+                      fill
+                      style={{ objectFit: 'contain' }}
+                      unoptimized
+                    />
+                  </div>
+                )}
+
                 {question.type === 'radio' && question.options && (
                   <div className="flex flex-col space-y-2">
-                    {question.options.map(option => (
-                      <label key={option} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
+                    {/* MODIFIED: Changed key to ensure uniqueness */}
+                    {question.options.map((option, optionIndex) => (
+                      <label key={`${option}-${optionIndex}`} className="flex items-center space-x-3 p-3 rounded-md border hover:bg-gray-100 cursor-pointer transition-colors has-[:checked]:bg-blue-50 has-[:checked]:border-blue-400">
                         <input type="radio" required name={question.id} value={option} onChange={(e) => handleAnswerChange(question.id, e.target.value)} className="form-radio text-blue-600"/>
                         <span>{option}</span>
                       </label>
@@ -128,6 +141,7 @@ const AllQuestionsPage: React.FC = () => {
                     singleSelect
                     onSelectionComplete={(selection) => handleAnswerChange(question.id, selection)}
                     labels={question.imageLabels}
+                    reasons={question.reasons}
                   />
                 )}
               </CardContent>

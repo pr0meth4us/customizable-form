@@ -1,16 +1,19 @@
-
 import mongoose, { Schema, model, models } from 'mongoose';
+
 export interface IQuestion {
   id: string;
   label: string;
-  options?: string[]; // Optional based on your schema
+  options?: string[];
   type: 'radio' | 'text' | 'image-select';
-  instructions?: string; // Optional
-  imageOptions?: string[]; // Optional
-  imageLabels?: string[]; // Optional
-  viewPassword?: string; // Add this if you intend to include it here for password-protected questions
+  instructions?: string;
+  imageOptions?: string[];
+  imageLabels?: string[];
+  viewPassword?: string;
+  imageUrl?: string; // NEW: Optional image for any question
+  reasons?: string[]; // NEW: Optional custom reasons for image-select
 }
-const questionSchema = new Schema<IQuestion>({ // Use the interface here
+
+const questionSchema = new Schema<IQuestion>({
   id: {
     type: String,
     required: true,
@@ -28,8 +31,9 @@ const questionSchema = new Schema<IQuestion>({ // Use the interface here
   instructions: String,
   imageOptions: [String],
   imageLabels: [String],
+  imageUrl: String, // NEW: Added to schema
+  reasons: [String], // NEW: Added to schema
 });
-
 
 const questionnaireSchema = new Schema({
   title: {
@@ -41,11 +45,10 @@ const questionnaireSchema = new Schema({
     type: String,
     trim: true,
   },
-  // NEW: Password field for viewing submissions
   password: {
     type: String,
     required: true,
-    select: false, // Don't include password in general queries
+    select: false,
   },
   layout: {
     type: String,
