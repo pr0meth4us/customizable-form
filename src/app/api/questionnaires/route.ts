@@ -6,13 +6,8 @@ import bcrypt from 'bcryptjs';
 
 export async function GET(request: Request) {
   try {
-    console.log("Password expected by server:", process.env.SURVEY_LIST_PASSWORD);
-
     const authHeader = request.headers.get('Authorization');
     const submittedPassword = authHeader?.split('Bearer ')[1];
-
-    // Add this log to see what the server received
-    console.log("Password received by server:", submittedPassword);
 
     if (submittedPassword !== process.env.SURVEY_LIST_PASSWORD) {
       return NextResponse.json({ message: 'Authorization required' }, { status: 401 });
