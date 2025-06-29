@@ -33,7 +33,6 @@ interface QuestionnaireInfo {
 
 type ViewMode = 'cards' | 'spreadsheet';
 
-// Extend the Window interface to include msSaveOrOpenBlob for IE compatibility
 declare global {
     interface Navigator {
         msSaveOrOpenBlob?: (blob: Blob, filename: string) => boolean;
@@ -48,14 +47,13 @@ const SubmissionViewerPage = () => {
 
     const [isAuthenticated, setIsAuthenticated] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
-    const [viewMode, setViewMode] = useState<ViewMode>('cards');
+    const [viewMode, setViewMode] = useState<ViewMode>('spreadsheet');
 
     const [questionnaireInfo, setQuestionnaireInfo] = useState<QuestionnaireInfo | null>(null);
     const [submissions, setSubmissions] = useState<Submission[]>([]);
 
     const tableRef = useRef<HTMLTableElement>(null);
 
-    // Effect to set the document title dynamically
     useEffect(() => {
         if (isAuthenticated && questionnaireInfo?.title) {
             document.title = `Submissions: ${questionnaireInfo.title}`;
@@ -73,7 +71,6 @@ const SubmissionViewerPage = () => {
         }
         setIsLoading(true);
         try {
-            // Step 1: Verify credentials are correct
             const verifyRes = await fetch(`/api/questionnaires/${questionnaireId}/verify`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -219,7 +216,7 @@ const SubmissionViewerPage = () => {
                                 type="password"
                                 value={password}
                                 onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter admin password"
+                                placeholder="Enter questionairre password"
                                 className="font-mono"
                               />
                           </div>

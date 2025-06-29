@@ -29,7 +29,7 @@ interface Questionnaire {
   _id?: string;
   title: string;
   description: string;
-  layout: 'multi-page' | 'single-page';
+  layout: 'multi-page.tsx' | 'single-page.tsx';
   questions: Question[];
   password?: string;
 }
@@ -45,7 +45,7 @@ const DashboardPage = () => {
   const [newQuestionnaire, setNewQuestionnaire] = useState<Questionnaire>({
     title: '',
     description: '',
-    layout: 'multi-page',
+    layout: 'multi-page.tsx',
     questions: []
   });
   const [createdInfo, setCreatedInfo] = useState<CreatedInfo | null>(null);
@@ -135,7 +135,7 @@ const DashboardPage = () => {
         const data = await res.json();
         toast.success("Questionnaire created successfully!");
         setCreatedInfo({ id: data._id, title: data.title, password: data.password });
-        setNewQuestionnaire({ title: '', description: '', layout: 'multi-page', questions: [] });
+        setNewQuestionnaire({ title: '', description: '', layout: 'multi-page.tsx', questions: [] });
       } else {
         const errorData = await res.json();
         toast.error(`Failed to create questionnaire: ${errorData.message}`);

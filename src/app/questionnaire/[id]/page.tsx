@@ -11,7 +11,7 @@ interface Questionnaire {
   _id: string;
   title: string;
   description: string;
-  layout: 'multi-page' | 'single-page'; // Ensure layout is part of the interface
+  layout: 'multi-page.tsx' | 'single-page.tsx'; // Ensure layout is part of the interface
   questions: { id: string }[];
 }
 
@@ -47,19 +47,19 @@ const StartSurveyPage: React.FC = () => {
    * =================================================================
    * MODIFIED CODE: This function now checks the survey layout.
    * =================================================================
-   * REASON: The original code always redirected to the multi-page
+   * REASON: The original code always redirected to the multi-page.tsx
    * format. This version reads the `layout` property and routes to
-   * '/all' for single-page surveys.
+   * '/all' for single-page.tsx surveys.
    * =================================================================
    */
   const handleStart = () => {
     if (questionnaire && questionnaire.questions.length > 0) {
       // Check the layout property of the questionnaire
-      if (questionnaire.layout === 'single-page') {
-        // If layout is 'single-page', redirect to the 'all' questions page
+      if (questionnaire.layout === 'single-page.tsx') {
+        // If layout is 'single-page.tsx', redirect to the 'all' questions page.tsx
         router.push(`/questionnaire/${id}/all`);
       } else {
-        // Otherwise, proceed with the default multi-page layout
+        // Otherwise, proceed with the default multi-page.tsx layout
         const firstQuestionId = questionnaire.questions[0].id;
         router.push(`/questionnaire/${id}/${firstQuestionId}`);
       }

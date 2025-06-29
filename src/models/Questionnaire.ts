@@ -52,8 +52,8 @@ const questionnaireSchema = new Schema({
   },
   layout: {
     type: String,
-    enum: ['multi-page', 'single-page'],
-    default: 'multi-page',
+    enum: ['multi-page.tsx', 'single-page.tsx'],
+    default: 'multi-page.tsx',
   },
   questions: [questionSchema],
   createdAt: {
