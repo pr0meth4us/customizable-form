@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
-import { PlusCircle, Trash2, Eye, Copy, AlertTriangle, Link as LinkIcon, Loader2 } from 'lucide-react';
+import { PlusCircle, Trash2, Eye, Copy, AlertTriangle, Link as LinkIcon, Loader2, TestTube2 } from 'lucide-react';
 import { toast, Toaster } from 'sonner';
 
 // Interfaces
@@ -29,7 +29,7 @@ interface Questionnaire {
   _id?: string;
   title: string;
   description: string;
-  layout: 'multi-page.tsx' | 'single-page.tsx';
+  layout: 'multi-page' | 'single-page';
   questions: Question[];
   password?: string;
 }
@@ -40,12 +40,24 @@ interface CreatedInfo {
   password?: string;
 }
 
+// MODIFIED: Added types for API responses to avoid 'any'
+interface CreateSuccessResponse {
+  _id: string;
+  title: string;
+  password: string;
+}
+
+interface ErrorResponse {
+  message: string;
+}
+
+
 const DashboardPage = () => {
   const router = useRouter();
   const [newQuestionnaire, setNewQuestionnaire] = useState<Questionnaire>({
     title: '',
     description: '',
-    layout: 'multi-page.tsx',
+    layout: 'multi-page',
     questions: []
   });
   const [createdInfo, setCreatedInfo] = useState<CreatedInfo | null>(null);
@@ -56,7 +68,6 @@ const DashboardPage = () => {
     setBaseUrl(window.location.origin);
   }, []);
 
-  // MODIFIED: Added duplicate checking to validation
   const validateQuestionnaire = (): boolean => {
     if (!newQuestionnaire.title.trim()) {
       toast.error("Please provide a title for the questionnaire.");
@@ -69,7 +80,6 @@ const DashboardPage = () => {
         toast.error(`Question #${i + 1} is missing a label.`);
         return false;
       }
-
       if (q.type === 'radio') {
         const validOptions = q.options?.filter(opt => opt.trim() !== '') || [];
         if (validOptions.length < 2) {
@@ -81,7 +91,6 @@ const DashboardPage = () => {
           return false;
         }
       }
-
       if (q.type === 'image-select') {
         const validImageOptions = q.imageOptions?.filter(opt => opt.trim() !== '') || [];
         if (validImageOptions.length < 2) {
@@ -94,7 +103,6 @@ const DashboardPage = () => {
         }
       }
     }
-
     return true;
   };
 
@@ -104,21 +112,17 @@ const DashboardPage = () => {
     }
 
     setIsCreating(true);
-
     const payload = {
       ...newQuestionnaire,
       questions: newQuestionnaire.questions.map(q => {
         const { reasons, ...rest } = q;
-        // Ensure empty strings are filtered out but an intentionally empty array is respected
         if (q.type === 'image-select' && reasons) {
           const filteredReasons = reasons.filter(r => r.trim() !== '');
           if (filteredReasons.length > 0) {
             return { ...q, reasons: filteredReasons };
           } else if (reasons.length > 0 && filteredReasons.length === 0) {
-            // User entered spaces, treat as empty
             return rest;
           }
-          // If reasons is an empty array [], respect it
           return { ...q };
         }
         return rest;
@@ -132,12 +136,14 @@ const DashboardPage = () => {
         body: JSON.stringify(payload),
       });
       if (res.ok) {
-        const data = await res.json();
+        // MODIFIED: Typed the JSON response
+        const data = await res.json() as CreateSuccessResponse;
         toast.success("Questionnaire created successfully!");
         setCreatedInfo({ id: data._id, title: data.title, password: data.password });
-        setNewQuestionnaire({ title: '', description: '', layout: 'multi-page.tsx', questions: [] });
+        setNewQuestionnaire({ title: '', description: '', layout: 'multi-page', questions: [] });
       } else {
-        const errorData = await res.json();
+        // MODIFIED: Typed the JSON response
+        const errorData = await res.json() as ErrorResponse;
         toast.error(`Failed to create questionnaire: ${errorData.message}`);
       }
     } catch (error) {
@@ -160,13 +166,15 @@ const DashboardPage = () => {
 
   const handleQuestionChange = (qIndex: number, field: keyof Question, value: unknown) => {
     const updatedQuestions = [...newQuestionnaire.questions];
-    updatedQuestions[qIndex] = { ...updatedQuestions[qIndex], [field]: value };
+    const questionToUpdate = { ...updatedQuestions[qIndex], [field]: value };
+    updatedQuestions[qIndex] = questionToUpdate;
+
     if (field === 'type') {
       const questionType = value as Question['type'];
-      updatedQuestions[qIndex].options = questionType === 'radio' ? ['', ''] : undefined;
-      updatedQuestions[qIndex].imageOptions = questionType === 'image-select' ? ['', ''] : undefined;
-      updatedQuestions[qIndex].imageLabels = questionType === 'image-select' ? ['', ''] : undefined;
-      updatedQuestions[qIndex].reasons = questionType === 'image-select' ? [] : undefined;
+      questionToUpdate.options = questionType === 'radio' ? ['', ''] : undefined;
+      questionToUpdate.imageOptions = questionType === 'image-select' ? ['', ''] : undefined;
+      questionToUpdate.imageLabels = questionType === 'image-select' ? ['', ''] : undefined;
+      questionToUpdate.reasons = questionType === 'image-select' ? [] : undefined;
     }
     setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
   };
@@ -180,21 +188,28 @@ const DashboardPage = () => {
     }
   }
 
+  // MODIFIED: Rewrote function to be type-safe and remove 'any'
   const addArrayField = (qIndex: number, field: 'options' | 'reasons') => {
     const updatedQuestions = [...newQuestionnaire.questions];
-    if (!updatedQuestions[qIndex][field]) {
-      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-      // @ts-expect-error
-      (updatedQuestions[qIndex] as unknown)[field] = [];
+    const question = updatedQuestions[qIndex];
+
+    if (field === 'options') {
+      if (!question.options) {
+        question.options = [];
+      }
+      question.options.push('');
+    } else if (field === 'reasons') {
+      if (!question.reasons) {
+        question.reasons = [];
+      }
+      question.reasons.push('');
     }
-    (updatedQuestions[qIndex][field] as string[]).push('');
     setNewQuestionnaire(prev => ({ ...prev, questions: updatedQuestions }));
   }
 
   const removeArrayField = (qIndex: number, field: 'options' | 'reasons', oIndex: number) => {
     const updatedQuestions = [...newQuestionnaire.questions];
     const currentOptions = updatedQuestions[qIndex][field] as string[] | undefined;
-    // For radio options, enforce minimum of 2
     if (field === 'options' && currentOptions && currentOptions.length <= 2) {
       toast.info("A minimum of 2 options is required.");
       return;
@@ -238,9 +253,14 @@ const DashboardPage = () => {
       <Toaster richColors position="top-center" />
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold">Survey Management Dashboard</h1>
-        <Button variant="outline" onClick={() => router.push('/dashboard/view')}>
-          <Eye className="mr-2 h-4 w-4" /> View Submissions
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => router.push('/dashboard/test-submissions')}>
+            <TestTube2 className="mr-2 h-4 w-4" /> Test Viewer
+          </Button>
+          <Button variant="outline" onClick={() => router.push('/dashboard/view')}>
+            <Eye className="mr-2 h-4 w-4" /> View Submissions
+          </Button>
+        </div>
       </div>
 
       <Dialog open={!!createdInfo} onOpenChange={() => setCreatedInfo(null)}>
@@ -308,7 +328,7 @@ const DashboardPage = () => {
               <Card key={q.id} className="mb-4 p-4 space-y-4 relative">
                 <Button variant="ghost" size="icon" className="absolute top-2 right-2" onClick={() => removeQuestion(qIndex)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
                 <Input placeholder="Question Label" value={q.label} onChange={(e) => handleQuestionChange(qIndex, 'label', e.target.value)} className="font-semibold" />
-                <Select value={q.type} onValueChange={(value) => handleQuestionChange(qIndex, 'type', value)}>
+                <Select value={q.type} onValueChange={(value) => handleQuestionChange(qIndex, 'type', value as Question['type'])}>
                   <SelectTrigger><SelectValue placeholder="Select a type" /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="radio">Radio Buttons</SelectItem>
@@ -363,7 +383,6 @@ const DashboardPage = () => {
                         </div>
                       ))}
                       <Button variant="outline" size="sm" onClick={() => addArrayField(qIndex, 'reasons')}><PlusCircle className="mr-2 h-4 w-4" /> Add Reason</Button>
-
                     </div>
                   </div>
                 )}
